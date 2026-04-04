@@ -8,8 +8,9 @@ services:
       POSTGRES_DB: ictpm41
       POSTGRES_USER: ictpm41_user
       POSTGRES_PASSWORD: ictpm41_pass
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
