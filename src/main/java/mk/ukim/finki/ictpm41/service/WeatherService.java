@@ -2,6 +2,7 @@ package mk.ukim.finki.ictpm41.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import mk.ukim.finki.ictpm41.dto.OpenMeteoResponse;
 import mk.ukim.finki.ictpm41.entity.Field;
 import mk.ukim.finki.ictpm41.entity.WeatherReading;
 import mk.ukim.finki.ictpm41.repository.WeatherReadingRepository;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -24,30 +24,35 @@ public class WeatherService {
     private String openMeteoBaseUrl;
 
     public WeatherReading fetchAndSave(Field field) {
-        String url = buildUrl(field.getLatitude(), field.getLongitude());
+        WeatherReading reading = fetchByCoordinates(field.getLatitude(), field.getLongitude());
+        reading.setField(field);
+        return weatherReadingRepository.save(reading);
+    }
 
-        log.info("Fetching weather for field '{}' from Open-Meteo", field.getName());
+    public WeatherReading fetchByCoordinates(double latitude, double longitude) {
+        String url = buildUrl(latitude, longitude);
 
-        Map response = restTemplate.getForObject(url, Map.class);
+        log.info("Fetching weather from Open-Meteo for lat={}, lon={}", latitude, longitude);
 
-        if (response == null) {
-            throw new RuntimeException("Empty response from Open-Meteo for field: " + field.getName());
+        OpenMeteoResponse response = restTemplate.getForObject(url, OpenMeteoResponse.class);
+
+        if (response == null || response.getHourly() == null) {
+            throw new RuntimeException("Invalid response from Open-Meteo");
         }
 
-        Map<String, List<?>> hourly = (Map<String, List<?>>) response.get("hourly");
+        OpenMeteoResponse.Hourly hourly = response.getHourly();
 
         WeatherReading reading = new WeatherReading();
-        reading.setField(field);
-        reading.setTemperature(getDouble(hourly, "temperature_2m", 0));
-        reading.setHumidity(getInteger(hourly, "relative_humidity_2m", 0));
-        reading.setWindSpeed(getDouble(hourly, "wind_speed_10m", 0));
-        reading.setWindDirection(getInteger(hourly, "wind_direction_10m", 0));
-        reading.setPressure(getDouble(hourly, "pressure_msl", 0));
-        reading.setPrecipitation(getDouble(hourly, "precipitation", 0));
-        reading.setSoilMoisture(getDouble(hourly, "soil_moisture_0_to_1cm", 0));
-        reading.setFireWeatherIndex(getDouble(hourly, "fire_weather_index", 0));
+        reading.setTemperature(getSafeDouble(hourly.getTemperature_2m(), 0));
+        reading.setHumidity(getSafeInteger(hourly.getRelative_humidity_2m(), 0));
+        reading.setWindSpeed(getSafeDouble(hourly.getWind_speed_10m(), 0));
+        reading.setWindDirection(getSafeInteger(hourly.getWind_direction_10m(), 0));
+        reading.setPressure(getSafeDouble(hourly.getPressure_msl(), 0));
+        reading.setPrecipitation(getSafeDouble(hourly.getPrecipitation(), 0));
+        reading.setSoilMoisture(getSafeDouble(hourly.getSoil_moisture_0_to_1cm(), 0));
+        reading.setFireWeatherIndex(getSafeDouble(hourly.getFire_weather_index(), 0));
 
-        return weatherReadingRepository.save(reading);
+        return reading;
     }
 
     private String buildUrl(double lat, double lon) {
@@ -66,27 +71,13 @@ public class WeatherService {
                 + "&timezone=Europe%2FSkopje";
     }
 
-    private Double getDouble(Map<String, List<?>> hourly, String key, int index) {
-        try {
-            List<?> values = hourly.get(key);
-            if (values == null || values.isEmpty()) return null;
-            Object val = values.get(index);
-            return val == null ? null : ((Number) val).doubleValue();
-        } catch (Exception e) {
-            log.warn("Could not parse '{}' from Open-Meteo response", key);
-            return null;
-        }
+    private Double getSafeDouble(List<Double> values, int index) {
+        if (values == null || values.isEmpty() || index >= values.size()) return null;
+        return values.get(index);
     }
 
-    private Integer getInteger(Map<String, List<?>> hourly, String key, int index) {
-        try {
-            List<?> values = hourly.get(key);
-            if (values == null || values.isEmpty()) return null;
-            Object val = values.get(index);
-            return val == null ? null : ((Number) val).intValue();
-        } catch (Exception e) {
-            log.warn("Could not parse '{}' from Open-Meteo response", key);
-            return null;
-        }
+    private Integer getSafeInteger(List<Integer> values, int index) {
+        if (values == null || values.isEmpty() || index >= values.size()) return null;
+        return values.get(index);
     }
 }
