@@ -2,6 +2,7 @@ import {BrowserRouter, Navigate, Route, Routes} from 'react-router-dom';
 import ProtectedRoute from './utils/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
 
 function Dashboard() {
     return <h1 style={{padding: '2rem'}}>Dashboard — coming soon</h1>;
@@ -23,7 +24,7 @@ export default function App() {
                 <Route path="/register" element={<RegisterPage/>}/>
 
                 <Route path="/dashboard" element={
-                    <ProtectedRoute><Dashboard/></ProtectedRoute>
+                    <ProtectedRoute><DashboardPage/></ProtectedRoute>
                 }/>
                 <Route path="/fields" element={
                     <ProtectedRoute><Fields/></ProtectedRoute>
