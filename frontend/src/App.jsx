@@ -3,17 +3,19 @@ import ProtectedRoute from './utils/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import FieldsPage from './pages/FieldsPage';
+import AlertsPage from './pages/AlertsPage';
 
 function Dashboard() {
     return <h1 style={{padding: '2rem'}}>Dashboard — coming soon</h1>;
 }
 
 function Fields() {
-    return <h1 style={{padding: '2rem'}}>Fields — coming soon</h1>;
+    return <FieldsPage />;
 }
 
 function Alerts() {
-    return <h1 style={{padding: '2rem'}}>Alerts — coming soon</h1>;
+    return <AlertsPage />;
 }
 
 export default function App() {
