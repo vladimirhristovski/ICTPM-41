@@ -9,6 +9,7 @@ import mk.ukim.finki.ictpm41.repository.WeatherReadingRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 
@@ -56,19 +57,20 @@ public class WeatherService {
     }
 
     private String buildUrl(double lat, double lon) {
-        return openMeteoBaseUrl + "/forecast"
-                + "?latitude=" + lat
-                + "&longitude=" + lon
-                + "&hourly=temperature_2m"
-                + ",relative_humidity_2m"
-                + ",precipitation"
-                + ",wind_speed_10m"
-                + ",wind_direction_10m"
-                + ",pressure_msl"
-                + ",soil_moisture_0_to_1cm"
-                + ",fire_weather_index"
-                + "&forecast_days=1"
-                + "&timezone=Europe%2FSkopje";
+        return UriComponentsBuilder.fromHttpUrl(openMeteoBaseUrl + "/forecast")
+                .queryParam("latitude", lat)
+                .queryParam("longitude", lon)
+                .queryParam("hourly", String.join(",",
+                        "temperature_2m",
+                        "relative_humidity_2m",
+                        "precipitation",
+                        "wind_speed_10m",
+                        "wind_direction_10m",
+                        "pressure_msl",
+                        "soil_moisture_0_to_1cm"))
+                .queryParam("forecast_days", 1)
+                .queryParam("timezone", "Europe/Skopje")
+                .toUriString();
     }
 
     private Double getSafeDouble(List<Double> values, int index) {
