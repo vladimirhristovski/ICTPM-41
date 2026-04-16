@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 
-const ALERTS = [
+const INITIAL_ALERTS = [
     {
         id: 1,
         title: 'High Fire Risk',
@@ -9,6 +10,7 @@ const ALERTS = [
         description: 'Elevated fire risk detected based on current weather conditions and dry vegetation.',
         time: 'Today, 14:30',
         source: 'Weather + vegetation index',
+        read: false,
         actions: [
             'Postpone open-flame or spark-prone work until conditions improve.',
             'Brief crews on wind direction and nearest water points.',
@@ -23,6 +25,7 @@ const ALERTS = [
         description: 'Critical alert triggered due to high temperature, low humidity, and strong wind conditions.',
         time: 'Today, 13:10',
         source: 'Multi-sensor composite',
+        read: false,
         actions: [
             'Treat as immediate operational priority: restrict non-essential machinery in the parcel.',
             'Increase patrol frequency on borders adjacent to roads or dry grassland.',
@@ -37,6 +40,7 @@ const ALERTS = [
         description: 'Moderate rainfall expected within the next 48 hours. Useful for planning field activity.',
         time: 'Today, 11:00',
         source: 'Regional forecast feed',
+        read: false,
         actions: [
             'Shift fertilizer or spray applications to avoid wash-off if timing is flexible.',
             'Prepare drainage checks on low-lying rows after the event.',
@@ -53,6 +57,15 @@ function badgeColor(level) {
 
 export default function AlertsPage() {
     const navigate = useNavigate();
+    const [alerts, setAlerts] = useState(INITIAL_ALERTS);
+
+    const markAsRead = (id) => {
+        setAlerts(prev =>
+            prev.map(alert =>
+                alert.id === id ? { ...alert, read: true } : alert
+            )
+        );
+    };
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
@@ -69,7 +82,7 @@ export default function AlertsPage() {
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-                    <span style={{ fontWeight: '800', fontSize: '1.2rem', color: '#60a5fa', letterSpacing: '-0.025em' }}>ICTPM-41</span>
+                    <span style={{ fontWeight: '800', fontSize: '1.2rem', color: '#60a5fa' }}>ICTPM-41</span>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                         {['Dashboard', 'Fields', 'Alerts'].map(item => (
                             <button
@@ -82,8 +95,7 @@ export default function AlertsPage() {
                                     cursor: 'pointer',
                                     padding: '8px 16px',
                                     borderRadius: '8px',
-                                    fontWeight: 600,
-                                    fontSize: '0.875rem'
+                                    fontWeight: 600
                                 }}
                             >
                                 {item}
@@ -94,138 +106,60 @@ export default function AlertsPage() {
             </div>
 
             <div style={{ padding: '2.5rem 4rem' }}>
-                <div style={{ marginBottom: '2rem' }}>
-                    <h1 style={{ margin: 0, fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.025em' }}>
-                        Alerts Center
-                    </h1>
-                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '1rem', maxWidth: '720px', lineHeight: 1.6 }}>
-                        Alerts merge live weather, soil and vegetation proxies, and forecast deltas. Use severity to triage field visits—EXTREME and HIGH items should be reviewed the same day; INFO items support scheduling and logistics.
-                    </p>
-                </div>
+                <h1>Alerts Center</h1>
 
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: '1.25rem',
-                    marginBottom: '1.75rem'
-                }}>
-                    {[
-                        {
-                            title: 'Needs immediate review',
-                            value: ALERTS.filter(a => a.severity === 'EXTREME' || a.severity === 'HIGH').length,
-                            detail: 'HIGH or EXTREME severity',
-                            accent: '#f97316',
-                        },
-                        {
-                            title: 'Informational',
-                            value: ALERTS.filter(a => a.severity === 'INFO').length,
-                            detail: 'Planning and forecast',
-                            accent: '#3b82f6',
-                        },
-                        {
-                            title: 'Fields referenced',
-                            value: new Set(ALERTS.map(a => a.field)).size,
-                            detail: 'Unique parcels in list',
-                            accent: '#6366f1',
-                        },
-                    ].map(card => (
-                        <div
-                            key={card.title}
-                            style={{
-                                background: '#ffffff',
-                                borderRadius: '14px',
-                                padding: '1.25rem 1.35rem',
-                                border: '1px solid #e2e8f0',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                                borderLeft: `4px solid ${card.accent}`,
-                            }}
-                        >
-                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                {card.title}
-                            </div>
-                            <div style={{ marginTop: '0.45rem', fontSize: '1.75rem', fontWeight: 800, color: '#0f172a' }}>{card.value}</div>
-                            <div style={{ marginTop: '0.3rem', fontSize: '0.82rem', color: '#94a3b8' }}>{card.detail}</div>
-                        </div>
-                    ))}
-                </div>
-
-                <div style={{
-                    background: '#ffffff',
-                    borderRadius: '16px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    overflow: 'hidden'
-                }}>
-                    {ALERTS.map((alert, index) => {
+                <div>
+                    {alerts.map((alert, index) => {
                         const colors = badgeColor(alert.severity);
 
                         return (
-                            <div
-                                key={alert.id}
-                                style={{
-                                    padding: '1.25rem 1.5rem',
-                                    borderBottom: index !== ALERTS.length - 1 ? '1px solid #e2e8f0' : 'none'
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '1rem' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
-                                                {alert.title}
-                                            </h2>
-                                            <span style={{
-                                                padding: '5px 10px',
-                                                borderRadius: '999px',
-                                                fontSize: '0.72rem',
-                                                fontWeight: 800,
-                                                background: colors.bg,
-                                                color: colors.text
-                                            }}>
-                                                {alert.severity}
-                                            </span>
-                                        </div>
+                            <div key={alert.id} style={{ marginBottom: '20px', padding: '20px', border: '1px solid #ccc', borderRadius: '10px' }}>
 
-                                        <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: 1.6 }}>
-                                            {alert.description}
-                                        </p>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                    <h3>{alert.title}</h3>
 
-                                        <div style={{ marginTop: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '1rem 1.5rem', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
-                                            <span>Field: {alert.field}</span>
-                                            <span>{alert.time}</span>
-                                            <span style={{ color: '#94a3b8', fontWeight: 500 }}>Source: {alert.source}</span>
-                                        </div>
+                                    <span style={{
+                                        padding: '5px 10px',
+                                        borderRadius: '999px',
+                                        background: colors.bg,
+                                        color: colors.text
+                                    }}>
+                                        {alert.severity}
+                                    </span>
 
-                                        <div style={{ marginTop: '1rem', padding: '0.9rem 1rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                                            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
-                                                Suggested actions
-                                            </div>
-                                            <ul style={{ margin: 0, paddingLeft: '1.2rem', color: '#334155', fontSize: '0.9rem', lineHeight: 1.65 }}>
-                                                {alert.actions.map((line, i) => (
-                                                    <li key={i}>{line}</li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
+                                    <span style={{
+                                        padding: '5px 10px',
+                                        borderRadius: '999px',
+                                        background: alert.read ? '#e2e8f0' : '#dbeafe'
+                                    }}>
+                                        {alert.read ? 'Read' : 'Unread'}
+                                    </span>
                                 </div>
+
+                                <p>{alert.description}</p>
+
+                                <p><b>Field:</b> {alert.field}</p>
+                                <p>{alert.time}</p>
+
+                                <button
+                                    onClick={() => markAsRead(alert.id)}
+                                    disabled={alert.read}
+                                    style={{
+                                        marginTop: '10px',
+                                        padding: '8px 12px',
+                                        background: alert.read ? 'gray' : 'blue',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '5px',
+                                        cursor: alert.read ? 'not-allowed' : 'pointer'
+                                    }}
+                                >
+                                    {alert.read ? 'Already read' : 'Mark as read'}
+                                </button>
+
                             </div>
                         );
                     })}
-                </div>
-
-                <div style={{
-                    marginTop: '2rem',
-                    padding: '1.5rem 1.75rem',
-                    background: '#ffffff',
-                    borderRadius: '16px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                }}>
-                    <h2 style={{ margin: '0 0 0.6rem', fontSize: '0.9rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Alert lifecycle & responsibilities
-                    </h2>
-                    <p style={{ margin: 0, color: '#475569', fontSize: '0.95rem', lineHeight: 1.7 }}>
-                        New alerts appear when model thresholds are crossed; they stay visible until you acknowledge them in your operational process (future releases may add in-app acknowledgment). EXTREME events should trigger a documented check—verify sensors, notify stakeholders, and record mitigation. INFO alerts are safe to use for weekly planning meetings and do not replace official meteorological warnings for public safety.
-                    </p>
                 </div>
             </div>
         </div>
