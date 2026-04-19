@@ -52,42 +52,49 @@ joblib.dump(rain_regressor,  "models/rain_regressor.pkl")
 print("Rain models saved.")
 
 # ============================================================
-# FIRE MODEL - UCI dataset + synthetic fallback
+# FIRE MODEL - Macedonia real data > UCI dataset > synthetic
 # ============================================================
-try:
-    df = pd.read_csv("data/forestfires.csv")
-    month_map = {"jan":1,"feb":2,"mar":3,"apr":4,"may":5,"jun":6,
-                 "jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12}
-    day_map   = {"mon":1,"tue":2,"wed":3,"thu":4,"fri":5,"sat":6,"sun":7}
-    df["month"] = df["month"].map(month_map)
-    df["day"]   = df["day"].map(day_map)
-    df["fire_occurred"] = (df["area"] > 0).astype(int)
-    df["vegetation_type"] = np.random.randint(0, 3, len(df))
-    df["fire_weather_index"] = df["FFMC"] * 0.1
-    df["soil_moisture"] = np.random.uniform(0.1, 0.9, len(df))
-    df = df.rename(columns={"temp": "temperature", "RH": "humidity", "wind": "wind_speed"})
-    features_fire = ["temperature", "humidity", "wind_speed", "fire_weather_index", "soil_moisture", "vegetation_type"]
+features_fire = ["temperature", "humidity", "wind_speed", "fire_weather_index", "soil_moisture", "vegetation_type"]
+
+if os.path.exists("data/macedonia_training_data.csv"):
+    df = pd.read_csv("data/macedonia_training_data.csv")
     X_fire = df[features_fire]
     y_fire = df["fire_occurred"]
-    print("Using UCI Forest Fire dataset.")
-except FileNotFoundError:
-    print("UCI dataset not found, using synthetic data.")
-    fire_data = pd.DataFrame({
-        "temperature":        np.random.uniform(10, 45, n),
-        "humidity":           np.random.uniform(10, 100, n),
-        "wind_speed":         np.random.uniform(0, 80, n),
-        "fire_weather_index": np.random.uniform(0, 100, n),
-        "soil_moisture":      np.random.uniform(0.05, 0.9, n),
-        "vegetation_type":    np.random.randint(0, 3, n),
-    })
-    fire_data["fire_occurred"] = (
-        (fire_data["temperature"] > 30) &
-        (fire_data["humidity"] < 30) &
-        (fire_data["fire_weather_index"] > 50)
-    ).astype(int)
-    X_fire = fire_data[["temperature", "humidity", "wind_speed",
-                         "fire_weather_index", "soil_moisture", "vegetation_type"]]
-    y_fire = fire_data["fire_occurred"]
+    print(f"Using Macedonia training data ({len(df)} samples, "
+          f"{y_fire.sum()} fire / {(y_fire == 0).sum()} non-fire).")
+else:
+    try:
+        df = pd.read_csv("data/forestfires.csv")
+        month_map = {"jan":1,"feb":2,"mar":3,"apr":4,"may":5,"jun":6,
+                     "jul":7,"aug":8,"sep":9,"oct":10,"nov":11,"dec":12}
+        day_map   = {"mon":1,"tue":2,"wed":3,"thu":4,"fri":5,"sat":6,"sun":7}
+        df["month"] = df["month"].map(month_map)
+        df["day"]   = df["day"].map(day_map)
+        df["fire_occurred"] = (df["area"] > 0).astype(int)
+        df["vegetation_type"] = np.random.randint(0, 3, len(df))
+        df["fire_weather_index"] = df["FFMC"] * 0.1
+        df["soil_moisture"] = np.random.uniform(0.1, 0.9, len(df))
+        df = df.rename(columns={"temp": "temperature", "RH": "humidity", "wind": "wind_speed"})
+        X_fire = df[features_fire]
+        y_fire = df["fire_occurred"]
+        print("Using UCI Forest Fire dataset.")
+    except FileNotFoundError:
+        print("No real dataset found — using synthetic data.")
+        fire_data = pd.DataFrame({
+            "temperature":        np.random.uniform(10, 45, n),
+            "humidity":           np.random.uniform(10, 100, n),
+            "wind_speed":         np.random.uniform(0, 80, n),
+            "fire_weather_index": np.random.uniform(0, 100, n),
+            "soil_moisture":      np.random.uniform(0.05, 0.9, n),
+            "vegetation_type":    np.random.randint(0, 3, n),
+        })
+        fire_data["fire_occurred"] = (
+            (fire_data["temperature"] > 30) &
+            (fire_data["humidity"] < 30) &
+            (fire_data["fire_weather_index"] > 50)
+        ).astype(int)
+        X_fire = fire_data[features_fire]
+        y_fire = fire_data["fire_occurred"]
 
 X_tr, X_te, y_tr, y_te = train_test_split(X_fire, y_fire, test_size=0.2, random_state=42)
 fire_model = RandomForestClassifier(n_estimators=100, random_state=42)
