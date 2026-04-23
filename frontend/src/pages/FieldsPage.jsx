@@ -9,15 +9,19 @@ function riskColor(level) {
     return '#10b981';
 }
 
+const VEGETATION_TYPES = ['All', 'Crops', 'Mixed', 'Forest'];
+
 export default function FieldsPage() {
     const navigate = useNavigate();
     const [fields, setFields] = useState([]);
+    const [vegetationFilter, setVegetationFilter] = useState('All');
     const [showModal, setShowModal] = useState(false);
     const [editingField, setEditingField] = useState(null);
     const [formData, setFormData] = useState({
         name: '',
         location: '',
         crop: '',
+        vegetationType: 'Crops',
         areaHa: '',
         soilMoisture: '',
         windKmh: '',
@@ -44,7 +48,7 @@ export default function FieldsPage() {
         }
         setShowModal(false);
         setEditingField(null);
-        setFormData({ name: '', location: '', crop: '', areaHa: '', soilMoisture: '', windKmh: '', rainChance: '', fireRisk: 'MEDIUM', notes: '' });
+        setFormData({ name: '', location: '', crop: '', vegetationType: 'Crops', areaHa: '', soilMoisture: '', windKmh: '', rainChance: '', fireRisk: 'MEDIUM', notes: '' });
         loadFields();
     };
 
@@ -70,6 +74,10 @@ export default function FieldsPage() {
             alert('Please select a CSV file');
         }
     };
+
+    const filteredFields = vegetationFilter === 'All'
+        ? fields
+        : fields.filter(f => f.vegetationType === vegetationFilter);
 
     const totalArea = fields.reduce((sum, f) => sum + (parseFloat(f.areaHa) || 0), 0);
     const highRiskCount = fields.filter(f => f.fireRisk === 'HIGH' || f.fireRisk === 'EXTREME').length;
@@ -126,11 +134,11 @@ export default function FieldsPage() {
                     </p>
                 </div>
 
-                <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                     <button
                         onClick={() => {
                             setEditingField(null);
-                            setFormData({ name: '', location: '', crop: '', areaHa: '', soilMoisture: '', windKmh: '', rainChance: '', fireRisk: 'MEDIUM', notes: '' });
+                            setFormData({ name: '', location: '', crop: '', vegetationType: 'Crops', areaHa: '', soilMoisture: '', windKmh: '', rainChance: '', fireRisk: 'MEDIUM', notes: '' });
                             setShowModal(true);
                         }}
                         style={{ background: '#0f172a', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -146,6 +154,38 @@ export default function FieldsPage() {
                     <button onClick={exportCSV} style={{ background: '#059669', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <i className="fas fa-download"></i> Export CSV
                     </button>
+                </div>
+
+                {/* VEGETATION TYPE FILTER */}
+                <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginRight: '4px' }}>
+                        <i className="fas fa-leaf" style={{ marginRight: '5px' }}></i>Vegetation:
+                    </span>
+                    {VEGETATION_TYPES.map(type => (
+                        <button
+                            key={type}
+                            onClick={() => setVegetationFilter(type)}
+                            style={{
+                                padding: '7px 18px',
+                                borderRadius: '999px',
+                                border: '1.5px solid',
+                                borderColor: vegetationFilter === type ? '#0f172a' : '#e2e8f0',
+                                background: vegetationFilter === type ? '#0f172a' : '#ffffff',
+                                color: vegetationFilter === type ? '#ffffff' : '#64748b',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                fontSize: '0.82rem',
+                                transition: 'all 0.15s ease'
+                            }}
+                        >
+                            {type}
+                        </button>
+                    ))}
+                    {vegetationFilter !== 'All' && (
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: '4px' }}>
+                            {filteredFields.length} of {fields.length} fields
+                        </span>
+                    )}
                 </div>
 
                 <div style={{
@@ -182,111 +222,140 @@ export default function FieldsPage() {
                     ))}
                 </div>
 
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                    gap: '1.5rem'
-                }}>
-                    {fields.map(field => (
-                        <div
-                            key={field.id}
-                            style={{
-                                background: '#ffffff',
-                                borderRadius: '16px',
-                                padding: '1.5rem',
-                                border: '1px solid #e2e8f0',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                            }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
-                                <div>
-                                    <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                                        {field.name}
-                                    </h2>
-                                    <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
-                                        <i className="fas fa-location-dot" style={{ fontSize: '0.7rem', marginRight: '4px' }}></i>
-                                        {field.location}
-                                    </p>
-                                </div>
-                                <span style={{
-                                    padding: '6px 10px',
-                                    borderRadius: '999px',
-                                    fontSize: '0.72rem',
-                                    fontWeight: 800,
-                                    background: '#eff6ff',
-                                    color: '#2563eb'
-                                }}>
-                                    <i className="fas fa-chart-line" style={{ fontSize: '0.65rem', marginRight: '4px' }}></i>
-                                    {field.status || 'Monitored'}
-                                </span>
-                            </div>
-
-                            <div style={{ display: 'grid', gap: '0.9rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-seedling" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Crop</span>
-                                    <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.crop || '—'}</span>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-cloud-rain" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Rain Chance</span>
-                                    <span style={{ color: '#4338ca', fontWeight: 700 }}>{field.rainChance || '0%'}</span>
-                                </div>
-
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-fire" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Fire Risk</span>
+                {filteredFields.length === 0 ? (
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '4rem 2rem',
+                        background: '#ffffff',
+                        borderRadius: '16px',
+                        border: '1px solid #e2e8f0',
+                        color: '#94a3b8'
+                    }}>
+                        <i className="fas fa-leaf" style={{ fontSize: '2rem', marginBottom: '1rem', display: 'block' }}></i>
+                        <p style={{ margin: 0, fontWeight: 600 }}>No fields match the selected vegetation type.</p>
+                        <p style={{ margin: '6px 0 0', fontSize: '0.9rem' }}>Try selecting a different filter or add a new field.</p>
+                    </div>
+                ) : (
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                        gap: '1.5rem'
+                    }}>
+                        {filteredFields.map(field => (
+                            <div
+                                key={field.id}
+                                style={{
+                                    background: '#ffffff',
+                                    borderRadius: '16px',
+                                    padding: '1.5rem',
+                                    border: '1px solid #e2e8f0',
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                                    <div>
+                                        <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                                            {field.name}
+                                        </h2>
+                                        <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
+                                            <i className="fas fa-location-dot" style={{ fontSize: '0.7rem', marginRight: '4px' }}></i>
+                                            {field.location}
+                                        </p>
+                                    </div>
                                     <span style={{
-                                        padding: '5px 10px',
+                                        padding: '6px 10px',
                                         borderRadius: '999px',
-                                        fontSize: '0.75rem',
+                                        fontSize: '0.72rem',
                                         fontWeight: 800,
-                                        color: '#ffffff',
-                                        background: riskColor(field.fireRisk)
+                                        background: '#eff6ff',
+                                        color: '#2563eb'
                                     }}>
-                                        {field.fireRisk}
+                                        <i className="fas fa-chart-line" style={{ fontSize: '0.65rem', marginRight: '4px' }}></i>
+                                        {field.status || 'Monitored'}
                                     </span>
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-arrows-alt" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Area</span>
-                                    <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.areaHa} ha</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-tint" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Soil moisture</span>
-                                    <span style={{ color: '#4338ca', fontWeight: 700 }}>{field.soilMoisture}%</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-wind" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Wind</span>
-                                    <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.windKmh} km/h</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-clock" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Last sync</span>
-                                    <span style={{ color: '#64748b', fontWeight: 600, fontSize: '0.85rem' }}>{field.lastReading || 'Just now'}</span>
-                                </div>
-                            </div>
+                                <div style={{ display: 'grid', gap: '0.9rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-seedling" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Crop</span>
+                                        <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.crop || '—'}</span>
+                                    </div>
 
-                            <div style={{
-                                marginTop: '1.25rem',
-                                paddingTop: '1rem',
-                                borderTop: '1px solid #e2e8f0',
-                                color: '#475569',
-                                fontSize: '0.88rem',
-                                lineHeight: 1.55
-                            }}>
-                                <i className="fas fa-pen" style={{ fontSize: '0.7rem', marginRight: '6px', color: '#94a3b8' }}></i>
-                                {field.notes || 'No additional notes.'}
-                            </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-leaf" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Vegetation</span>
+                                        <span style={{
+                                            padding: '3px 10px',
+                                            borderRadius: '999px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 700,
+                                            background: '#f0fdf4',
+                                            color: '#166534'
+                                        }}>
+                                            {field.vegetationType || '—'}
+                                        </span>
+                                    </div>
 
-                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                                <button onClick={() => handleEdit(field)} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <i className="fas fa-edit"></i> Edit
-                                </button>
-                                <button onClick={() => handleDelete(field.id, field.name)} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <i className="fas fa-trash"></i> Delete
-                                </button>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-cloud-rain" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Rain Chance</span>
+                                        <span style={{ color: '#4338ca', fontWeight: 700 }}>{field.rainChance || '0%'}</span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-fire" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Fire Risk</span>
+                                        <span style={{
+                                            padding: '5px 10px',
+                                            borderRadius: '999px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: 800,
+                                            color: '#ffffff',
+                                            background: riskColor(field.fireRisk)
+                                        }}>
+                                            {field.fireRisk}
+                                        </span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-arrows-alt" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Area</span>
+                                        <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.areaHa} ha</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-tint" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Soil moisture</span>
+                                        <span style={{ color: '#4338ca', fontWeight: 700 }}>{field.soilMoisture}%</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-wind" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Wind</span>
+                                        <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.windKmh} km/h</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-clock" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Last sync</span>
+                                        <span style={{ color: '#64748b', fontWeight: 600, fontSize: '0.85rem' }}>{field.lastReading || 'Just now'}</span>
+                                    </div>
+                                </div>
+
+                                <div style={{
+                                    marginTop: '1.25rem',
+                                    paddingTop: '1rem',
+                                    borderTop: '1px solid #e2e8f0',
+                                    color: '#475569',
+                                    fontSize: '0.88rem',
+                                    lineHeight: 1.55
+                                }}>
+                                    <i className="fas fa-pen" style={{ fontSize: '0.7rem', marginRight: '6px', color: '#94a3b8' }}></i>
+                                    {field.notes || 'No additional notes.'}
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                                    <button onClick={() => handleEdit(field)} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <i className="fas fa-edit"></i> Edit
+                                    </button>
+                                    <button onClick={() => handleDelete(field.id, field.name)} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <i className="fas fa-trash"></i> Delete
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 <div style={{
                     marginTop: '2.5rem',
@@ -379,6 +448,15 @@ export default function FieldsPage() {
                                     onChange={e => setFormData({ ...formData, crop: e.target.value })}
                                     style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem' }}
                                 />
+                                <select
+                                    value={formData.vegetationType || 'Crops'}
+                                    onChange={e => setFormData({ ...formData, vegetationType: e.target.value })}
+                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem', color: '#1e293b' }}
+                                >
+                                    <option value="Crops">Crops</option>
+                                    <option value="Mixed">Mixed</option>
+                                    <option value="Forest">Forest</option>
+                                </select>
                                 <input
                                     type="number"
                                     placeholder="Area (ha)"

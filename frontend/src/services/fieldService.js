@@ -1,9 +1,12 @@
-let MOCK_FIELDS = [
+const STORAGE_KEY = 'ictpm41_fields';
+
+const DEFAULT_FIELDS = [
     {
         id: 1,
         name: 'North Field',
         location: 'Skopje Region',
         crop: 'Wheat',
+        vegetationType: 'Crops',
         status: 'Monitored',
         fireRisk: 'HIGH',
         rainChance: '72%',
@@ -18,6 +21,7 @@ let MOCK_FIELDS = [
         name: 'South Field',
         location: 'Veles Region',
         crop: 'Corn',
+        vegetationType: 'Crops',
         status: 'Stable',
         fireRisk: 'EXTREME',
         rainChance: '25%',
@@ -32,6 +36,7 @@ let MOCK_FIELDS = [
         name: 'East Field',
         location: 'Shtip Region',
         crop: 'Sunflower',
+        vegetationType: 'Mixed',
         status: 'Monitored',
         fireRisk: 'MEDIUM',
         rainChance: '48%',
@@ -43,39 +48,58 @@ let MOCK_FIELDS = [
     },
 ];
 
-const getNextId = () => Math.max(...MOCK_FIELDS.map(f => f.id), 0) + 1;
+const loadFields = () => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+        return JSON.parse(stored);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_FIELDS));
+    return [...DEFAULT_FIELDS];
+};
+
+const saveFields = (fields) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(fields));
+};
+
+const getNextId = (fields) => Math.max(...fields.map(f => f.id), 0) + 1;
 
 export const getFields = () => {
-    return Promise.resolve([...MOCK_FIELDS]);
+    return Promise.resolve(loadFields());
 };
 
 export const getField = (id) => {
-    const field = MOCK_FIELDS.find(f => f.id === id);
-    return Promise.resolve(field);
+    const fields = loadFields();
+    return Promise.resolve(fields.find(f => f.id === id));
 };
 
 export const createField = (data) => {
+    const fields = loadFields();
     const newField = {
-        id: getNextId(),
+        id: getNextId(fields),
         ...data,
         lastReading: 'Just now',
         status: 'Monitored',
         fireRisk: data.fireRisk || 'MEDIUM',
+        vegetationType: data.vegetationType || 'Crops',
     };
-    MOCK_FIELDS.push(newField);
+    fields.push(newField);
+    saveFields(fields);
     return Promise.resolve(newField);
 };
 
 export const updateField = (id, data) => {
-    const index = MOCK_FIELDS.findIndex(f => f.id === id);
+    const fields = loadFields();
+    const index = fields.findIndex(f => f.id === id);
     if (index !== -1) {
-        MOCK_FIELDS[index] = { ...MOCK_FIELDS[index], ...data, id };
+        fields[index] = { ...fields[index], ...data, id };
+        saveFields(fields);
     }
     return Promise.resolve({ ...data, id });
 };
 
 export const deleteField = (id) => {
-    MOCK_FIELDS = MOCK_FIELDS.filter(f => f.id !== id);
+    const fields = loadFields().filter(f => f.id !== id);
+    saveFields(fields);
     return Promise.resolve();
 };
 
@@ -86,11 +110,12 @@ export const importCSV = (file) => {
 };
 
 export const exportCSV = () => {
-    const headers = ['id', 'name', 'location', 'crop', 'status', 'fireRisk', 'rainChance', 'areaHa', 'soilMoisture', 'windKmh', 'lastReading', 'notes'];
+    const fields = loadFields();
+    const headers = ['id', 'name', 'location', 'crop', 'vegetationType', 'status', 'fireRisk', 'rainChance', 'areaHa', 'soilMoisture', 'windKmh', 'lastReading', 'notes'];
     const csvRows = [];
     csvRows.push(headers.join(','));
 
-    for (const field of MOCK_FIELDS) {
+    for (const field of fields) {
         const values = headers.map(header => {
             const value = field[header] || '';
             return `"${String(value).replace(/"/g, '""')}"`;
