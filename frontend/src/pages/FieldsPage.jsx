@@ -36,7 +36,7 @@ export default function FieldsPage() {
 
     const loadFields = async () => {
         const data = await getFields();
-        setFields(data);
+        setFields(Array.isArray(data) ? data : data.content || []);
     };
 
     const handleSubmit = async (e) => {
@@ -80,7 +80,7 @@ export default function FieldsPage() {
         : fields.filter(f => f.vegetationType === vegetationFilter);
 
     const totalArea = fields.reduce((sum, f) => sum + (parseFloat(f.areaHa) || 0), 0);
-    const highRiskCount = fields.filter(f => f.fireRisk === 'HIGH' || f.fireRisk === 'EXTREME').length;
+    const highRiskCount = fields.filter(f => f.fireRiskLevel === 'HIGH' || f.fireRiskLevel === 'EXTREME').length;
     const avgSoilMoisture = fields.length > 0
         ? Math.round(fields.reduce((sum, f) => sum + (parseFloat(f.soilMoisture) || 0), 0) / fields.length)
         : 0;
@@ -308,9 +308,9 @@ export default function FieldsPage() {
                                             fontSize: '0.75rem',
                                             fontWeight: 800,
                                             color: '#ffffff',
-                                            background: riskColor(field.fireRisk)
+                                            background: riskColor(field.fireRiskLevel)
                                         }}>
-                                            {field.fireRisk}
+                                            {field.fireRiskLevel || 'N/A'}
                                         </span>
                                     </div>
 

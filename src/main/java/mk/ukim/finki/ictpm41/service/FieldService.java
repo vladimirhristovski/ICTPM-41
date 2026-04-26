@@ -8,6 +8,7 @@ import mk.ukim.finki.ictpm41.dto.FieldResponse;
 import mk.ukim.finki.ictpm41.entity.Field;
 import mk.ukim.finki.ictpm41.entity.User;
 import mk.ukim.finki.ictpm41.repository.FieldRepository;
+import mk.ukim.finki.ictpm41.repository.FireRiskPredictionRepository;
 import mk.ukim.finki.ictpm41.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,9 @@ public class FieldService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private FireRiskPredictionRepository fireRiskPredictionRepository;
+
     private FieldResponse toResponse(Field f) {
         FieldResponse r = new FieldResponse();
         r.setId(f.getId());
@@ -37,6 +41,9 @@ public class FieldService {
         r.setSizeHectares(f.getSizeHectares());
         r.setElevation(f.getElevation());
         r.setCreatedAt(f.getCreatedAt());
+        fireRiskPredictionRepository
+                .findTopByFieldIdOrderByPredictedAtDesc(f.getId())
+                .ifPresent(p -> r.setFireRiskLevel(p.getRiskLevel()));
         return r;
     }
 
@@ -134,7 +141,6 @@ public class FieldService {
                 .toList();
     }
 
-    // --- CSV EXPORT ---
     public byte[] exportToCsv(Long userId) throws IOException {
         List<Field> fields = fieldRepository.findByUserId(userId);
 

@@ -1,7 +1,5 @@
 package mk.ukim.finki.ictpm41.dto;
-
 import lombok.Data;
-
 import java.time.LocalDateTime;
 
 @Data
@@ -14,4 +12,5 @@ public class FieldResponse {
     private Double sizeHectares;
     private Double elevation;
     private LocalDateTime createdAt;
+    private String fireRiskLevel;
 }
