@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final UserRepository userRepository;
@@ -29,12 +28,12 @@ public class AuthController {
 
         if (userRepository.existsByEmail(request.getEmail())) {
             return ResponseEntity.badRequest()
-                    .body(new AuthResponse(null, request.getUsername(), null));
+                    .body(new AuthResponse(null, "Email is already in use.", null));
         }
 
         if (userRepository.existsByUsername(request.getUsername())) {
             return ResponseEntity.badRequest()
-                    .body(new AuthResponse(null, request.getUsername(), null));
+                    .body(new AuthResponse(null, "Username is already taken.", null));
         }
 
         User user = new User();
