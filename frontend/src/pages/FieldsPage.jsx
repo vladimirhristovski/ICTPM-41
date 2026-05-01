@@ -9,6 +9,10 @@ function riskColor(level) {
     return '#10b981';
 }
 
+function getFireRiskLevel(field) {
+    return field.fireRiskLevel || field.fireRisk || 'N/A';
+}
+
 const VEGETATION_TYPES = ['All', 'Crops', 'Mixed', 'Forest'];
 
 export default function FieldsPage() {
@@ -80,7 +84,10 @@ export default function FieldsPage() {
         : fields.filter(f => f.vegetationType === vegetationFilter);
 
     const totalArea = fields.reduce((sum, f) => sum + (parseFloat(f.areaHa) || 0), 0);
-    const highRiskCount = fields.filter(f => f.fireRiskLevel === 'HIGH' || f.fireRiskLevel === 'EXTREME').length;
+    const highRiskCount = fields.filter(f => {
+        const level = getFireRiskLevel(f);
+        return level === 'HIGH' || level === 'EXTREME';
+    }).length;
     const avgSoilMoisture = fields.length > 0
         ? Math.round(fields.reduce((sum, f) => sum + (parseFloat(f.soilMoisture) || 0), 0) / fields.length)
         : 0;
@@ -308,9 +315,9 @@ export default function FieldsPage() {
                                             fontSize: '0.75rem',
                                             fontWeight: 800,
                                             color: '#ffffff',
-                                            background: riskColor(field.fireRiskLevel)
+                                            background: riskColor(getFireRiskLevel(field))
                                         }}>
-                                            {field.fireRiskLevel || 'N/A'}
+                                            {getFireRiskLevel(field)}
                                         </span>
                                     </div>
 
