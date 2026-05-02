@@ -47,6 +47,12 @@ public class FieldService {
         return r;
     }
 
+    public Long getUserIdByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"))
+                .getId();
+    }
+
     public List<FieldResponse> getAllFieldsForUser(Long userId) {
         return fieldRepository.findByUserId(userId)
                 .stream()
