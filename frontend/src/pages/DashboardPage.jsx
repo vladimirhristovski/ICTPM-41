@@ -1,32 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Cell, LabelList
 } from 'recharts';
+import api from '../services/api';
 
-const MOCK_RAIN = [
-    { day: 'MON', mm: 2.5, probability: 30, icon: '🌤️', temp: 20 },
-    { day: 'TUE', mm: 8.1, probability: 72, icon: '🌧️', temp: 21 },
-    { day: 'WED', mm: 0.0, probability: 5,  icon: '☀️', temp: 18 },
-    { day: 'THU', mm: 14.3, probability: 85, icon: '⛈️', temp: 20 },
-    { day: 'FRI', mm: 3.2, probability: 40, icon: '🌦️', temp: 22 },
-    { day: 'SAT', mm: 0.5, probability: 12, icon: '🌤️', temp: 24 },
-    { day: 'SUN', mm: 6.7, probability: 60, icon: '🌧️', temp: 23 },
-];
+const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
-const MOCK_FIRE = { riskScore: 0.67, riskLevel: 'HIGH' };
-const MOCK_ALERTS = [
-    { id: 1, message: 'HIGH fire risk for "North Field". Risk score: 67%.', riskLevel: 'HIGH' },
-    { id: 2, message: 'EXTREME fire risk for "South Field". Risk score: 91%.', riskLevel: 'EXTREME' },
-];
+const WEATHER_ICON = (prob) => {
+    if (prob >= 80) return '⛈️';
+    if (prob >= 60) return '🌧️';
+    if (prob >= 40) return '🌦️';
+    if (prob >= 20) return '🌤️';
+    return '☀️';
+};
 
 function FireGauge({ score, level }) {
-    const pct = Math.round(score * 100);
+    const pct = Math.round((score ?? 0) * 100);
     const color = level === 'EXTREME' ? '#ef4444'
-        : level === 'HIGH'    ? '#f97316'
-            : level === 'MEDIUM'  ? '#eab308'
-                :                       '#10b981';
+        : level === 'HIGH' ? '#f97316'
+            : level === 'MEDIUM' ? '#eab308'
+                : '#10b981';
     const needleAngle = -180 + (pct / 100) * 180;
     const toRad = d => d * Math.PI / 180;
     const cx = 100, cy = 88, r = 65;
@@ -64,9 +59,10 @@ function FireGauge({ score, level }) {
     );
 }
 
-const CustomTooltip = ({ active, payload, label }) => {
+// FIX 5: CustomTooltip now uses the passed rainData prop instead of hardcoded MOCK_RAIN
+const CustomTooltip = ({ active, payload, label, rainData }) => {
     if (active && payload && payload.length) {
-        const d = MOCK_RAIN.find(x => x.day === label);
+        const d = rainData.find(x => x.day === label);
         return (
             <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
                 <div style={{ color: '#1e293b', marginBottom: '4px', fontWeight: 700 }}>{label}</div>
@@ -80,16 +76,90 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function DashboardPage() {
     const [showAlerts, setShowAlerts] = useState(false);
-    const [selectedDay, setSelectedDay] = useState(1);
+    const [selectedDay, setSelectedDay] = useState(0);
     const navigate = useNavigate();
 
-    // Professional Blue Scale
+    // FIX 4: Field selector state
+    const [fields, setFields] = useState([]);
+    const [selectedFieldId, setSelectedFieldId] = useState(null);
+
+    // FIX 1: Real data state (replaces MOCK_RAIN, MOCK_FIRE)
+    const [rainData, setRainData] = useState([]);
+    const [fireData, setFireData] = useState(null);
+    const [loadingRain, setLoadingRain] = useState(false);
+    const [loadingFire, setLoadingFire] = useState(false);
+
+    // FIX 2 & 3: Real alerts state (replaces MOCK_ALERTS)
+    const [alerts, setAlerts] = useState([]);
+    const [alertCount, setAlertCount] = useState(0);
+
+    // Load user's fields on mount (for field selector)
+    useEffect(() => {
+        api.get('/api/fields')
+            .then(res => {
+                setFields(res.data);
+                if (res.data.length > 0) {
+                    setSelectedFieldId(res.data[0].id);
+                }
+            })
+            .catch(err => console.error('Failed to load fields:', err));
+    }, []);
+
+    // FIX 2: Fetch real alert count from backend
+    useEffect(() => {
+        api.get('/api/alerts/unread/count')
+            .then(res => setAlertCount(res.data))
+            .catch(err => console.error('Failed to load alert count:', err));
+    }, []);
+
+    // FIX 3: Fetch real unread alerts from backend
+    useEffect(() => {
+        api.get('/api/alerts/unread')
+            .then(res => setAlerts(res.data))
+            .catch(err => console.error('Failed to load alerts:', err));
+    }, []);
+
+    // FIX 1: Fetch real rain & fire data when field changes
+    const fetchForecast = useCallback((fieldId) => {
+        if (!fieldId) return;
+
+        setLoadingRain(true);
+        api.get(`/api/forecast/rain/${fieldId}`)
+            .then(res => {
+                const mapped = res.data.map(item => {
+                    const date = new Date(item.forecastDate);
+                    return {
+                        day: DAY_LABELS[date.getDay()],
+                        mm: item.expectedMm ?? 0,
+                        probability: Math.round((item.rainProbability ?? 0) * 100),
+                        icon: WEATHER_ICON(Math.round((item.rainProbability ?? 0) * 100)),
+                        forecastDate: item.forecastDate,
+                    };
+                });
+                setRainData(mapped);
+            })
+            .catch(err => console.error('Failed to load rain forecast:', err))
+            .finally(() => setLoadingRain(false));
+
+        setLoadingFire(true);
+        api.get(`/api/forecast/fire/${fieldId}`)
+            .then(res => setFireData(res.data))
+            .catch(err => console.error('Failed to load fire risk:', err))
+            .finally(() => setLoadingFire(false));
+    }, []);
+
+    useEffect(() => {
+        fetchForecast(selectedFieldId);
+    }, [selectedFieldId, fetchForecast]);
+
     const barColor = (pct) => pct >= 70 ? '#4338ca' : pct >= 40 ? '#6366f1' : '#a5b4fc';
+
+    const selectedDayData = rainData[selectedDay];
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
 
-            {/* NAVBAR - Darker Slate for Professional contrast */}
+            {/* NAVBAR */}
             <div style={{
                 background: '#0f172a',
                 padding: '0 2rem', display: 'flex', justifyContent: 'space-between',
@@ -109,6 +179,8 @@ export default function DashboardPage() {
                         ))}
                     </div>
                 </div>
+
+                {/* FIX 2 & 3: Bell uses real alertCount and real alerts */}
                 <div style={{ position: 'relative' }}>
                     <button onClick={() => setShowAlerts(!showAlerts)} style={{
                         background: '#1e293b', border: '1px solid #334155', cursor: 'pointer',
@@ -116,28 +188,31 @@ export default function DashboardPage() {
                         color: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
                         🔔
-                        {MOCK_ALERTS.length > 0 && (
+                        {alertCount > 0 && (
                             <span style={{
                                 position: 'absolute', top: '-5px', right: '-5px',
                                 background: '#ef4444', color: 'white', borderRadius: '50%',
                                 width: '20px', height: '20px', fontSize: '0.7rem',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800,
                                 border: '2px solid #0f172a'
-                            }}>{MOCK_ALERTS.length}</span>
+                            }}>{alertCount}</span>
                         )}
                     </button>
                     {showAlerts && (
                         <div style={{
                             position: 'absolute', right: 0, top: '3.5rem', width: '320px',
                             background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px',
-                            zIndex: 100, padding: '1rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)'
+                            zIndex: 100, padding: '1rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
                         }}>
                             <div style={{ fontWeight: 800, marginBottom: '1rem', color: '#0f172a', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.025em' }}>Active Alerts</div>
-                            {MOCK_ALERTS.map(a => (
+                            {alerts.length === 0 && (
+                                <div style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: '1rem 0' }}>No unread alerts</div>
+                            )}
+                            {alerts.map(a => (
                                 <div key={a.id} style={{
                                     background: '#f8fafc', borderRadius: '8px', padding: '0.75rem',
                                     marginBottom: '0.75rem', fontSize: '0.8rem', color: '#334155',
-                                    borderLeft: `4px solid ${a.riskLevel === 'EXTREME' ? '#ef4444' : '#f97316'}`,
+                                    borderLeft: `4px solid ${a.riskLevel === 'EXTREME' || a.riskLevel === 'HIGH' ? '#ef4444' : '#f97316'}`,
                                     boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
                                 }}>{a.message}</div>
                             ))}
@@ -147,67 +222,108 @@ export default function DashboardPage() {
             </div>
 
             <div style={{ padding: '2.5rem 4rem' }}>
-                <div style={{ marginBottom: '2rem' }}>
-                    <h1 style={{ margin: 0, fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.025em' }}>Weather Overview</h1>
-                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '1rem' }}>Monitoring environmental conditions for optimal field management.</p>
+                <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                        <h1 style={{ margin: 0, fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.025em' }}>Weather Overview</h1>
+                        <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '1rem' }}>Monitoring environmental conditions for optimal field management.</p>
+                    </div>
+
+                    {/* FIX 4: Field selector */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            Viewing field
+                        </label>
+                        {fields.length === 0 ? (
+                            <div style={{ fontSize: '0.85rem', color: '#94a3b8', padding: '8px 12px', background: '#f1f5f9', borderRadius: '8px' }}>
+                                No fields yet — add one in Fields
+                            </div>
+                        ) : (
+                            <select
+                                value={selectedFieldId ?? ''}
+                                onChange={e => {
+                                    setSelectedFieldId(Number(e.target.value));
+                                    setSelectedDay(0);
+                                }}
+                                style={{
+                                    padding: '8px 14px', borderRadius: '8px',
+                                    border: '1px solid #cbd5e1', background: '#ffffff',
+                                    fontSize: '0.9rem', fontWeight: 600, color: '#1e293b',
+                                    cursor: 'pointer', outline: 'none'
+                                }}
+                            >
+                                {fields.map(f => (
+                                    <option key={f.id} value={f.id}>{f.name}</option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
                 </div>
 
                 {/* 7-DAY CALENDAR CARDS */}
                 <div style={{
-                    background: '#ffffff',
-                    borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem',
+                    background: '#ffffff', borderRadius: '16px', padding: '1.5rem', marginBottom: '2rem',
                     border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                 }}>
                     <h2 style={{ margin: '0 0 1.5rem', fontSize: '0.9rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Rain Forecast
                     </h2>
-                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }}>
-                        {MOCK_RAIN.map((d, i) => (
-                            <div key={i} onClick={() => setSelectedDay(i)} style={{
-                                flex: 1, borderRadius: '12px', padding: '1.25rem 0.5rem',
-                                textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                background: selectedDay === i ? '#6366f1' : '#ffffff',
-                                border: '1px solid',
-                                borderColor: selectedDay === i ? '#4338ca' : '#e2e8f0',
-                                boxShadow: selectedDay === i ? '0 10px 15px -3px rgba(99, 102, 241, 0.3)' : 'none',
-                                transform: selectedDay === i ? 'translateY(-2px)' : 'none'
-                            }}>
-                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: selectedDay === i ? '#e0e7ff' : '#94a3b8', marginBottom: '0.75rem' }}>
-                                    {d.day}
-                                </div>
-                                <div style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>{d.icon}</div>
-                                <div style={{
-                                    fontSize: '0.7rem', fontWeight: 800,
-                                    background: selectedDay === i ? 'rgba(255,255,255,0.2)' : (d.probability >= 70 ? '#e0e7ff' : '#f1f5f9'),
-                                    borderRadius: '4px', padding: '2px 6px',
-                                    color: selectedDay === i ? '#ffffff' : (d.probability >= 70 ? '#4338ca' : '#64748b'),
-                                    display: 'inline-block', marginBottom: '0.75rem'
-                                }}>
-                                    {d.probability}%
-                                </div>
-                                <div style={{ fontSize: '1rem', fontWeight: 700, color: selectedDay === i ? '#ffffff' : '#1e293b' }}>
-                                    {d.temp}°
-                                </div>
-                            </div>
-                        ))}
-                    </div>
 
-                    <div style={{
-                        marginTop: '1.5rem', background: '#f8fafc',
-                        borderRadius: '12px', padding: '1.25rem',
-                        display: 'flex', gap: '2rem', alignItems: 'center',
-                        border: '1px solid #e2e8f0'
-                    }}>
-                        <div style={{ fontSize: '3rem' }}>{MOCK_RAIN[selectedDay].icon}</div>
-                        <div>
-                            <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#1e293b' }}>{MOCK_RAIN[selectedDay].day} </div>
-                            <div style={{ color: '#64748b', fontSize: '0.95rem', marginTop: '4px' }}>
-                                <b style={{color: '#6366f1'}}>{MOCK_RAIN[selectedDay].mm} mm</b> precipitation •
-                                <b> {MOCK_RAIN[selectedDay].temp}°C</b> temperature •
-                                <b> {MOCK_RAIN[selectedDay].probability}%</b> rain probability
-                            </div>
+                    {loadingRain ? (
+                        <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>Loading forecast...</div>
+                    ) : rainData.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                            {selectedFieldId ? 'No forecast data available for this field.' : 'Select a field to see the forecast.'}
                         </div>
-                    </div>
+                    ) : (
+                        <>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between' }}>
+                                {rainData.map((d, i) => (
+                                    <div key={i} onClick={() => setSelectedDay(i)} style={{
+                                        flex: 1, borderRadius: '12px', padding: '1.25rem 0.5rem',
+                                        textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        background: selectedDay === i ? '#6366f1' : '#ffffff',
+                                        border: '1px solid',
+                                        borderColor: selectedDay === i ? '#4338ca' : '#e2e8f0',
+                                        boxShadow: selectedDay === i ? '0 10px 15px -3px rgba(99, 102, 241, 0.3)' : 'none',
+                                        transform: selectedDay === i ? 'translateY(-2px)' : 'none'
+                                    }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: selectedDay === i ? '#e0e7ff' : '#94a3b8', marginBottom: '0.75rem' }}>
+                                            {d.day}
+                                        </div>
+                                        <div style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>{d.icon}</div>
+                                        <div style={{
+                                            fontSize: '0.7rem', fontWeight: 800,
+                                            background: selectedDay === i ? 'rgba(255,255,255,0.2)' : (d.probability >= 70 ? '#e0e7ff' : '#f1f5f9'),
+                                            borderRadius: '4px', padding: '2px 6px',
+                                            color: selectedDay === i ? '#ffffff' : (d.probability >= 70 ? '#4338ca' : '#64748b'),
+                                            display: 'inline-block', marginBottom: '0.75rem'
+                                        }}>
+                                            {d.probability}%
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: selectedDay === i ? '#ffffff' : '#1e293b' }}>
+                                            {d.mm} mm
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {selectedDayData && (
+                                <div style={{
+                                    marginTop: '1.5rem', background: '#f8fafc', borderRadius: '12px', padding: '1.25rem',
+                                    display: 'flex', gap: '2rem', alignItems: 'center', border: '1px solid #e2e8f0'
+                                }}>
+                                    <div style={{ fontSize: '3rem' }}>{selectedDayData.icon}</div>
+                                    <div>
+                                        <div style={{ fontWeight: 800, fontSize: '1.25rem', color: '#1e293b' }}>{selectedDayData.day}</div>
+                                        <div style={{ color: '#64748b', fontSize: '0.95rem', marginTop: '4px' }}>
+                                            <b style={{ color: '#6366f1' }}>{selectedDayData.mm} mm</b> precipitation •&nbsp;
+                                            <b>{selectedDayData.probability}%</b> rain probability
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
 
                 {/* BOTTOM ROW */}
@@ -216,28 +332,43 @@ export default function DashboardPage() {
                         <h2 style={{ margin: '0 0 1.5rem', fontSize: '0.9rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Weekly Precipitation (mm)
                         </h2>
-                        <ResponsiveContainer width="100%" height={220}>
-                            <BarChart data={MOCK_RAIN} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
-                                <XAxis dataKey="day" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false}/>
-                                <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} unit="mm"/>
-                                <Tooltip content={<CustomTooltip/>} cursor={{ fill: '#f1f5f9' }}/>
-                                <Bar dataKey="mm" radius={[4, 4, 0, 0]} maxBarSize={32}>
-                                    <LabelList dataKey="mm" position="top" offset={10}
-                                               style={{ fill: '#64748b', fontSize: '0.75rem', fontWeight: 700 }}/>
-                                    {MOCK_RAIN.map((entry, i) => (
-                                        <Cell key={i} fill={barColor(entry.probability)} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+                        {/* FIX 5: Chart uses live rainData, tooltip receives rainData prop */}
+                        {loadingRain || rainData.length === 0 ? (
+                            <div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+                                {loadingRain ? 'Loading...' : 'No data'}
+                            </div>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={220}>
+                                <BarChart data={rainData} margin={{ top: 20, right: 10, left: -20, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false}/>
+                                    <XAxis dataKey="day" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} axisLine={false} tickLine={false}/>
+                                    <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12 }} axisLine={false} tickLine={false} unit="mm"/>
+                                    <Tooltip content={<CustomTooltip rainData={rainData}/>} cursor={{ fill: '#f1f5f9' }}/>
+                                    <Bar dataKey="mm" radius={[4, 4, 0, 0]} maxBarSize={32}>
+                                        <LabelList dataKey="mm" position="top" offset={10}
+                                                   style={{ fill: '#64748b', fontSize: '0.75rem', fontWeight: 700 }}/>
+                                        {rainData.map((entry, i) => (
+                                            <Cell key={i} fill={barColor(entry.probability)} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
 
                     <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', textAlign: 'center' }}>
                         <h2 style={{ margin: '0 0 1.5rem', fontSize: '0.9rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>
                             Fire Risk Index
                         </h2>
-                        <FireGauge score={MOCK_FIRE.riskScore} level={MOCK_FIRE.riskLevel}/>
+                        {loadingFire ? (
+                            <div style={{ padding: '2rem', color: '#94a3b8' }}>Loading fire risk...</div>
+                        ) : fireData ? (
+                            <FireGauge score={fireData.riskScore} level={fireData.riskLevel}/>
+                        ) : (
+                            <div style={{ padding: '2rem', color: '#94a3b8' }}>
+                                {selectedFieldId ? 'No fire risk data available.' : 'Select a field to see fire risk.'}
+                            </div>
+                        )}
                         <p style={{ margin: '1.25rem 0 0', textAlign: 'left', color: '#64748b', fontSize: '0.9rem', lineHeight: 1.65, maxWidth: '520px', marginLeft: 'auto', marginRight: 'auto' }}>
                             The index blends temperature, humidity, wind, and dryness signals. When the needle sits in orange or red, open <b style={{ color: '#334155' }}>Fields</b> for parcel-level detail and <b style={{ color: '#334155' }}>Alerts</b> for actionable steps and timestamps.
                         </p>
@@ -245,12 +376,8 @@ export default function DashboardPage() {
                 </div>
 
                 <div style={{
-                    marginTop: '2rem',
-                    background: '#ffffff',
-                    borderRadius: '16px',
-                    padding: '1.5rem 1.75rem',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                    marginTop: '2rem', background: '#ffffff', borderRadius: '16px',
+                    padding: '1.5rem 1.75rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                 }}>
                     <h2 style={{ margin: '0 0 0.65rem', fontSize: '0.9rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Using this dashboard with the rest of the app
