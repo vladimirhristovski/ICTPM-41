@@ -3,7 +3,6 @@ import jakarta.validation.Valid;
 import mk.ukim.finki.ictpm41.dto.FieldRequest;
 import mk.ukim.finki.ictpm41.dto.FieldResponse;
 import mk.ukim.finki.ictpm41.service.FieldService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,8 +17,11 @@ import java.util.List;
 @RequestMapping("/api/fields")
 public class FieldController {
 
-    @Autowired
-    private FieldService fieldService;
+    private final FieldService fieldService;
+
+    public FieldController(FieldService fieldService) {
+        this.fieldService = fieldService;
+    }
 
     private Long getUserId(UserDetails userDetails) {
         return fieldService.getUserIdByUsername(userDetails.getUsername());

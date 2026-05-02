@@ -125,6 +125,9 @@ public class FieldService {
             List<String[]> rows = reader.readAll();
             for (int i = 1; i < rows.size(); i++) {
                 String[] row = rows.get(i);
+                if (row.length < 6) {
+                    throw new IOException("Row " + i + " has " + row.length + " column(s), expected 6");
+                }
                 Field f = new Field();
                 f.setUser(user);
                 f.setName(row[0]);
