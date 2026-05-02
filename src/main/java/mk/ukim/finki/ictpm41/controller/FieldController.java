@@ -1,15 +1,14 @@
 package mk.ukim.finki.ictpm41.controller;
-import mk.ukim.finki.ictpm41.repository.UserRepository;
 import jakarta.validation.Valid;
 import mk.ukim.finki.ictpm41.dto.FieldRequest;
 import mk.ukim.finki.ictpm41.dto.FieldResponse;
 import mk.ukim.finki.ictpm41.service.FieldService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.util.List;
@@ -18,16 +17,14 @@ import java.util.List;
 @RequestMapping("/api/fields")
 public class FieldController {
 
-    @Autowired
-    private FieldService fieldService;
+    private final FieldService fieldService;
 
-    @Autowired
-    private UserRepository userRepository;
+    public FieldController(FieldService fieldService) {
+        this.fieldService = fieldService;
+    }
 
     private Long getUserId(UserDetails userDetails) {
-        return userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"))
-                .getId();
+        return fieldService.getUserIdByUsername(userDetails.getUsername());
     }
 
     @GetMapping
@@ -75,7 +72,7 @@ public class FieldController {
             return ResponseEntity.ok(
                     fieldService.importFromCsv(file, getUserId(userDetails)));
         } catch (IOException e) {
-            return ResponseEntity.badRequest().build();
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
 
@@ -91,7 +88,7 @@ public class FieldController {
                     .contentType(MediaType.parseMediaType("text/csv"))
                     .body(data);
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().build();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }
