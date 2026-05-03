@@ -5,6 +5,8 @@ import {
     Tooltip, ResponsiveContainer, Cell, LabelList
 } from 'recharts';
 import api from '../services/api';
+import Navbar from '../components/Navbar';
+
 
 const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -160,28 +162,11 @@ export default function DashboardPage() {
         <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
 
             {/* NAVBAR */}
-            <div style={{
-                background: '#0f172a',
-                padding: '0 2rem', display: 'flex', justifyContent: 'space-between',
-                alignItems: 'center', height: '64px', position: 'sticky', top: 0, zIndex: 50,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-                    <span style={{ fontWeight: '800', fontSize: '1.2rem', color: '#60a5fa', letterSpacing: '-0.025em' }}>ICTPM-41</span>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {['Dashboard', 'Fields', 'Alerts'].map(item => (
-                            <button key={item} onClick={() => navigate('/' + item.toLowerCase())} style={{
-                                background: item === 'Dashboard' ? '#1e293b' : 'transparent',
-                                border: 'none', color: item === 'Dashboard' ? '#ffffff' : '#94a3b8',
-                                cursor: 'pointer', padding: '8px 16px', borderRadius: '8px',
-                                fontWeight: 600, fontSize: '0.875rem', transition: 'all 0.2s'
-                            }}>{item}</button>
-                        ))}
-                    </div>
-                </div>
+<Navbar />
 
                 {/* FIX 2 & 3: Bell uses real alertCount and real alerts */}
-                <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end', padding: '0 2rem', background: '#0f172a' }}>
+            <div style={{ position: 'relative' }}>
                     <button onClick={() => setShowAlerts(!showAlerts)} style={{
                         background: '#1e293b', border: '1px solid #334155', cursor: 'pointer',
                         fontSize: '1.1rem', position: 'relative', padding: '8px', borderRadius: '8px',

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getFields, createField, updateField, deleteField, importCSV, exportCSV } from '../services/fieldService';
+import Navbar from '../components/Navbar';
 
 function riskColor(level) {
     if (level === 'EXTREME') return '#ef4444';
@@ -106,42 +107,7 @@ export default function FieldsPage() {
 
     return (
         <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
-            <div style={{
-                background: '#0f172a',
-                padding: '0 2rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                height: '64px',
-                position: 'sticky',
-                top: 0,
-                zIndex: 50,
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
-                    <span style={{ fontWeight: '800', fontSize: '1.2rem', color: '#60a5fa', letterSpacing: '-0.025em' }}>ICTPM-41</span>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {['Dashboard', 'Fields', 'Alerts'].map(item => (
-                            <button
-                                key={item}
-                                onClick={() => navigate('/' + item.toLowerCase())}
-                                style={{
-                                    background: item === 'Fields' ? '#1e293b' : 'transparent',
-                                    border: 'none',
-                                    color: item === 'Fields' ? '#ffffff' : '#94a3b8',
-                                    cursor: 'pointer',
-                                    padding: '8px 16px',
-                                    borderRadius: '8px',
-                                    fontWeight: 600,
-                                    fontSize: '0.875rem'
-                                }}
-                            >
-                                {item}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </div>
+            <Navbar />
 
             <div style={{ padding: '2.5rem 4rem' }}>
                 <div style={{ marginBottom: '2rem' }}>
