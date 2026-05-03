@@ -5,18 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import FieldsPage from './pages/FieldsPage';
 import AlertsPage from './pages/AlertsPage';
-
-function Dashboard() {
-    return <h1 style={{padding: '2rem'}}>Dashboard — coming soon</h1>;
-}
-
-function Fields() {
-    return <FieldsPage />;
-}
-
-function Alerts() {
-    return <AlertsPage />;
-}
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
     return (
@@ -29,10 +18,13 @@ export default function App() {
                     <ProtectedRoute><DashboardPage/></ProtectedRoute>
                 }/>
                 <Route path="/fields" element={
-                    <ProtectedRoute><Fields/></ProtectedRoute>
+                    <ProtectedRoute><FieldsPage/></ProtectedRoute>
                 }/>
                 <Route path="/alerts" element={
-                    <ProtectedRoute><Alerts/></ProtectedRoute>
+                    <ProtectedRoute><AlertsPage/></ProtectedRoute>
+                }/>
+                <Route path="/profile" element={
+                    <ProtectedRoute><ProfilePage/></ProtectedRoute>
                 }/>
 
                 <Route path="/" element={<Navigate to="/dashboard" replace/>}/>
