@@ -1,19 +1,21 @@
 package mk.ukim.finki.ictpm41.controller;
 
 import lombok.RequiredArgsConstructor;
-import mk.ukim.finki.ictpm41.dto.AlertResponse;
-import mk.ukim.finki.ictpm41.entity.FireRiskPrediction;
-import mk.ukim.finki.ictpm41.entity.RainPrediction;
+import mk.ukim.finki.ictpm41.dto.FireRiskResponse;
+import mk.ukim.finki.ictpm41.dto.RainPredictionResponse;
 import mk.ukim.finki.ictpm41.repository.FieldRepository;
 import mk.ukim.finki.ictpm41.repository.FireRiskPredictionRepository;
 import mk.ukim.finki.ictpm41.repository.RainPredictionRepository;
 import mk.ukim.finki.ictpm41.repository.UserRepository;
-import mk.ukim.finki.ictpm41.service.AlertService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -24,7 +26,6 @@ public class ForecastController {
 
     private final RainPredictionRepository rainPredictionRepository;
     private final FireRiskPredictionRepository fireRiskPredictionRepository;
-    private final AlertService alertService;
     private final FieldRepository fieldRepository;
     private final UserRepository userRepository;
 
@@ -35,7 +36,7 @@ public class ForecastController {
     }
 
     @GetMapping("/rain/{fieldId}")
-    public ResponseEntity<List<RainPrediction>> getRainForecast(
+    public ResponseEntity<List<RainPredictionResponse>> getRainForecast(
             @PathVariable Long fieldId,
             @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = getUserId(userDetails);
@@ -43,13 +44,25 @@ public class ForecastController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        return ResponseEntity.ok(rainPredictionRepository
+        List<RainPredictionResponse> result = rainPredictionRepository
                 .findByFieldIdAndForecastDateBetweenOrderByForecastDateAsc(
-                        fieldId, LocalDate.now(), LocalDate.now().plusDays(6)));
+                        fieldId, LocalDate.now(), LocalDate.now().plusDays(6))
+                .stream()
+                .map(p -> {
+                    RainPredictionResponse dto = new RainPredictionResponse();
+                    dto.setForecastDate(p.getForecastDate());
+                    dto.setRainProbability(p.getRainProbability());
+                    dto.setExpectedMm(p.getExpectedMm());
+                    dto.setWillRain(p.getWillRain());
+                    return dto;
+                })
+                .toList();
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/fire/{fieldId}")
-    public ResponseEntity<FireRiskPrediction> getFireRisk(
+    public ResponseEntity<FireRiskResponse> getFireRisk(
             @PathVariable Long fieldId,
             @AuthenticationPrincipal UserDetails userDetails) {
         Long userId = getUserId(userDetails);
@@ -57,20 +70,19 @@ public class ForecastController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        return ResponseEntity.ok(fireRiskPredictionRepository
+        return fireRiskPredictionRepository
                 .findTopByFieldIdOrderByPredictedAtDesc(fieldId)
-                .orElse(null));
-    }
-
-    @GetMapping("/alerts/count")
-    public long getUnreadCount(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        return alertService.countUnreadAlerts(getUserId(userDetails));
-    }
-
-    @GetMapping("/alerts/unread")
-    public List<AlertResponse> getUnreadAlerts(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        return alertService.getUnreadAlertsForUser(getUserId(userDetails));
+                .map(p -> {
+                    FireRiskResponse dto = new FireRiskResponse();
+                    dto.setRiskScore(p.getRiskScore());
+                    dto.setRiskLevel(p.getRiskLevel());
+                    dto.setTemperature(p.getTemperature());
+                    dto.setHumidity(p.getHumidity());
+                    dto.setWindSpeed(p.getWindSpeed());
+                    dto.setFwi(p.getFwi());
+                    dto.setPredictedAt(p.getPredictedAt());
+                    return ResponseEntity.ok(dto);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

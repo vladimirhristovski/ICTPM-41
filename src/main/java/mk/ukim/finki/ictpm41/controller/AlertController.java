@@ -20,7 +20,7 @@ public class AlertController {
     private final UserRepository userRepository;
 
     private Long getUserId(UserDetails userDetails) {
-        return userRepository.findByEmail(userDetails.getUsername())
+        return userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"))
                 .getId();
     }

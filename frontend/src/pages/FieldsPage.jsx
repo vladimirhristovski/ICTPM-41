@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getFields, createField, updateField, deleteField, importCSV, exportCSV } from '../services/fieldService';
 import Navbar from '../components/Navbar';
 
@@ -20,7 +19,6 @@ function formatCreatedAt(value) {
 const VEGETATION_TYPES = ['All', 'Crops', 'Mixed', 'Forest'];
 
 export default function FieldsPage() {
-    const navigate = useNavigate();
     const [fields, setFields] = useState([]);
     const [vegetationFilter, setVegetationFilter] = useState('All');
     const [showModal, setShowModal] = useState(false);

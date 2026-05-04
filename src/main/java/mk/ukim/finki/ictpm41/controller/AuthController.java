@@ -11,7 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -28,12 +31,12 @@ public class AuthController {
 
         if (userRepository.existsByEmail(request.getEmail())) {
             return ResponseEntity.badRequest()
-                    .body(new AuthResponse(null, "Email is already in use.", null));
+                    .body(new AuthResponse(null, "Email is already in use.", null, null));
         }
 
         if (userRepository.existsByUsername(request.getUsername())) {
             return ResponseEntity.badRequest()
-                    .body(new AuthResponse(null, "Username is already taken.", null));
+                    .body(new AuthResponse(null, "Username is already taken.", null, null));
         }
 
         User user = new User();
@@ -44,8 +47,8 @@ public class AuthController {
 
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getEmail());
-        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), user.getRole()));
+        String token = jwtUtil.generateToken(user.getUsername());
+        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), user.getRole(), user.getEmail()));
     }
 
     @PostMapping("/login")
@@ -56,12 +59,12 @@ public class AuthController {
 
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        user.getEmail(),
+                        user.getUsername(),
                         request.getPassword()
                 )
         );
 
-        String token = jwtUtil.generateToken(user.getEmail());
-        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), user.getRole()));
+        String token = jwtUtil.generateToken(user.getUsername());
+        return ResponseEntity.ok(new AuthResponse(token, user.getUsername(), user.getRole(), user.getEmail()));
     }
 }

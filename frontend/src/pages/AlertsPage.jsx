@@ -1,12 +1,11 @@
-import { useNavigate } from 'react-router-dom';
-import { useState, useCallback, memo, useEffect } from 'react';
+import {memo, useCallback, useEffect, useState} from 'react';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
 
 const SEVERITY_BADGE = {
-    EXTREME: { bg: '#fef2f2', text: '#b91c1c', border: '#fecaca', accent: '#ef4444' },
-    HIGH: { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', accent: '#f97316' },
-    INFO: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', accent: '#3b82f6' },
+    EXTREME: {bg: '#fef2f2', text: '#b91c1c', border: '#fecaca', accent: '#ef4444'},
+    HIGH: {bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', accent: '#f97316'},
+    INFO: {bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', accent: '#3b82f6'},
 };
 
 function toSeverity(riskLevel) {
@@ -15,7 +14,7 @@ function toSeverity(riskLevel) {
     return 'INFO';
 }
 
-const AlertCard = memo(function AlertCard({ alert, onMarkRead }) {
+const AlertCard = memo(function AlertCard({alert, onMarkRead}) {
     const sev = SEVERITY_BADGE[toSeverity(alert.riskLevel)] ?? SEVERITY_BADGE.INFO;
     const isRead = alert.isRead;
 
@@ -57,7 +56,7 @@ const AlertCard = memo(function AlertCard({ alert, onMarkRead }) {
                     {alert.alertType === 'FIRE_RISK' ? 'Fire Risk Alert' : alert.alertType}
                 </h2>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center'}}>
                     <span style={{
                         padding: '0.2rem 0.65rem', borderRadius: '999px',
                         background: sev.bg, color: sev.text, border: `1px solid ${sev.border}`,
@@ -89,11 +88,11 @@ const AlertCard = memo(function AlertCard({ alert, onMarkRead }) {
                 gap: '0.5rem 1.25rem', marginBottom: '1rem',
                 fontSize: '0.8125rem', color: '#475569',
             }}>
-                <span style={{ fontWeight: 600, color: '#334155' }}>
-                    Field: <span style={{ fontWeight: 500, color: '#64748b' }}>{alert.fieldName}</span>
+                <span style={{fontWeight: 600, color: '#334155'}}>
+                    Field: <span style={{fontWeight: 500, color: '#64748b'}}>{alert.fieldName}</span>
                 </span>
-                <span style={{ color: '#cbd5e1', userSelect: 'none' }}>|</span>
-                <time style={{ color: '#64748b', fontWeight: 500 }}>
+                <span style={{color: '#cbd5e1', userSelect: 'none'}}>|</span>
+                <time style={{color: '#64748b', fontWeight: 500}}>
                     {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : ''}
                 </time>
             </div>
@@ -124,17 +123,20 @@ export default function AlertsPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        api.get('/api/alerts')
-            .then(res => setAlerts(res.data))
+        api.get('/alerts')
+            .then(res => {
+                const data = Array.isArray(res.data) ? res.data : res.data.content || [];
+                setAlerts(data);
+            })
             .catch(() => setError('Failed to load alerts.'))
             .finally(() => setLoading(false));
     }, []);
 
     const markAsRead = useCallback(async (id) => {
         try {
-            await api.put(`/api/alerts/${id}/read`);
+            await api.put(`/alerts/${id}/read`);
             setAlerts(prev =>
-                prev.map(a => a.id === id ? { ...a, isRead: true } : a)
+                prev.map(a => a.id === id ? {...a, isRead: true} : a)
             );
         } catch {
             alert('Could not mark alert as read. Please try again.');
@@ -142,27 +144,39 @@ export default function AlertsPage() {
     }, []);
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
-            <Navbar />
+        <div style={{
+            minHeight: '100vh',
+            background: '#f8fafc',
+            color: '#1e293b',
+            fontFamily: "'Inter', 'Segoe UI', sans-serif"
+        }}>
+            <Navbar/>
 
-            <div style={{ padding: '2.5rem clamp(1.25rem, 4vw, 4rem)', maxWidth: '920px' }}>
-                <header style={{ marginBottom: '1.75rem' }}>
-                    <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#0f172a' }}>
+            <div style={{padding: '2.5rem clamp(1.25rem, 4vw, 4rem)', maxWidth: '920px'}}>
+                <header style={{marginBottom: '1.75rem'}}>
+                    <h1 style={{
+                        margin: 0,
+                        fontSize: '1.75rem',
+                        fontWeight: 800,
+                        letterSpacing: '-0.03em',
+                        color: '#0f172a'
+                    }}>
                         Alerts Center
                     </h1>
                 </header>
 
-                {loading && <p style={{ color: '#64748b' }}>Loading alerts…</p>}
-                {error && <p style={{ color: '#ef4444' }}>{error}</p>}
+                {loading && <p style={{color: '#64748b'}}>Loading alerts…</p>}
+                {error && <p style={{color: '#ef4444'}}>{error}</p>}
 
                 {!loading && !error && alerts.length === 0 && (
-                    <p style={{ color: '#64748b', fontSize: '0.95rem' }}>No alerts yet. You'll see fire-risk alerts here when they are generated.</p>
+                    <p style={{color: '#64748b', fontSize: '0.95rem'}}>No alerts yet. You'll see fire-risk alerts here
+                        when they are generated.</p>
                 )}
 
-                <div role="list" style={{ display: 'flex', flexDirection: 'column' }}>
+                <div role="list" style={{display: 'flex', flexDirection: 'column'}}>
                     {alerts.map((alert) => (
                         <div key={alert.id} role="listitem">
-                            <AlertCard alert={alert} onMarkRead={markAsRead} />
+                            <AlertCard alert={alert} onMarkRead={markAsRead}/>
                         </div>
                     ))}
                 </div>

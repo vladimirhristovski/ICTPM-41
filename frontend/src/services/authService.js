@@ -7,6 +7,7 @@ const authService = {
         localStorage.setItem('user', JSON.stringify({
             username: response.data.username,
             role: response.data.role,
+            email: response.data.email,  // add this
         }));
         return response.data;
     },

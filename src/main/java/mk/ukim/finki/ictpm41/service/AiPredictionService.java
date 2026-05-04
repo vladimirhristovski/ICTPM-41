@@ -1,10 +1,15 @@
 package mk.ukim.finki.ictpm41.service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import mk.ukim.finki.ictpm41.dto.OpenMeteoResponse;
-import mk.ukim.finki.ictpm41.entity.*;
-import mk.ukim.finki.ictpm41.repository.*;
+import mk.ukim.finki.ictpm41.entity.Field;
+import mk.ukim.finki.ictpm41.entity.FireRiskPrediction;
+import mk.ukim.finki.ictpm41.entity.RainPrediction;
+import mk.ukim.finki.ictpm41.entity.WeatherReading;
+import mk.ukim.finki.ictpm41.repository.FireRiskPredictionRepository;
+import mk.ukim.finki.ictpm41.repository.RainPredictionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -23,7 +28,7 @@ public class AiPredictionService {
     private final RestTemplate restTemplate;
     private final RainPredictionRepository rainPredictionRepository;
     private final FireRiskPredictionRepository fireRiskPredictionRepository;
-    private final AlertRepository alertRepository;
+    private final AlertService alertService;
 
     @Value("${ai.service.url}")
     private String aiServiceUrl;
@@ -31,6 +36,7 @@ public class AiPredictionService {
     @Value("${openmeteo.base.url}")
     private String openMeteoBaseUrl;
 
+    @Transactional
     public void predictAndSave(Field field, WeatherReading reading) {
         try {
             OpenMeteoResponse forecast = fetch7DayForecast(field.getLatitude(), field.getLongitude());
@@ -136,9 +142,7 @@ public class AiPredictionService {
 
             log.info("Fire risk '{}' saved for field '{}'", prediction.getRiskLevel(), field.getName());
 
-            if ("HIGH".equals(riskLevel) || "EXTREME".equals(riskLevel)) {
-                createAlert(field, riskLevel, riskScore);
-            }
+            alertService.checkAndCreateFireAlert(field, prediction);
 
         } catch (Exception e) {
             log.error("Fire prediction failed for field '{}': {}", field.getName(), e.getMessage());
@@ -164,24 +168,13 @@ public class AiPredictionService {
         return restTemplate.getForObject(url, OpenMeteoResponse.class);
     }
 
-    private void createAlert(Field field, String riskLevel, Double riskScore) {
-        Alert alert = new Alert();
-        alert.setField(field);
-        alert.setAlertType("FIRE_RISK");
-        alert.setRiskLevel(riskLevel);
-        alert.setMessage(String.format("High fire risk detected for field '%s'. Risk level: %s (score: %.2f)",
-                field.getName(), riskLevel, riskScore));
-        alertRepository.save(alert);
-        log.info("Alert created for field '{}' with risk level {}", field.getName(), riskLevel);
-    }
-
     private String mapRiskLevel(String level) {
         return switch (level.toLowerCase()) {
-            case "low"     -> "LOW";
-            case "medium"  -> "MEDIUM";
-            case "high"    -> "HIGH";
+            case "low" -> "LOW";
+            case "medium" -> "MEDIUM";
+            case "high" -> "HIGH";
             case "extreme" -> "EXTREME";
-            default        -> "LOW";
+            default -> "LOW";
         };
     }
 
