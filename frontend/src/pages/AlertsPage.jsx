@@ -16,7 +16,7 @@ function toSeverity(riskLevel) {
 
 const AlertCard = memo(function AlertCard({alert, onMarkRead}) {
     const sev = SEVERITY_BADGE[toSeverity(alert.riskLevel)] ?? SEVERITY_BADGE.INFO;
-    const isRead = alert.isRead;
+    const isRead = alert.read;
 
     return (
         <article
@@ -100,7 +100,7 @@ const AlertCard = memo(function AlertCard({alert, onMarkRead}) {
             <button
                 type="button"
                 onClick={() => onMarkRead(alert.id)}
-                disabled={isRead}
+                disabled={alert.read}
                 style={{
                     padding: '0.5rem 1rem', fontSize: '0.8125rem', fontWeight: 600,
                     borderRadius: '8px',

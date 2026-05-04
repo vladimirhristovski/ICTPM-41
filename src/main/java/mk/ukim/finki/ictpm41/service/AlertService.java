@@ -82,7 +82,7 @@ public class AlertService {
         response.setAlertType(alert.getAlertType());
         response.setRiskLevel(alert.getRiskLevel());
         response.setMessage(alert.getMessage());
-        response.setIsRead(alert.getIsRead());
+        response.setRead(alert.getIsRead());
         response.setCreatedAt(alert.getCreatedAt());
         return response;
     }

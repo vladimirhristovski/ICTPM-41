@@ -28,7 +28,7 @@ export default function RegisterPage() {
             await authService.register(form.username, form.email, form.password);
             navigate('/login');
         } catch (err) {
-            setError(err.response?.data?.username || err.response?.data?.message || 'Registration failed. Please try again.');
+            setError(err.response?.data?.message || 'Registration failed. Please try again.');
         } finally {
             setLoading(false);
         }

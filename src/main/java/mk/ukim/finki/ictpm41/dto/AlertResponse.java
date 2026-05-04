@@ -11,6 +11,6 @@ public class AlertResponse {
     private String alertType;
     private String riskLevel;
     private String message;
-    private Boolean isRead;
+    private Boolean read;
     private LocalDateTime createdAt;
 }

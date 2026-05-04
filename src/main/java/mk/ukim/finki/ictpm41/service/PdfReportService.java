@@ -62,7 +62,7 @@ public class PdfReportService {
         addRow(table, "Temperature", p.getTemperature() + " °C", headerColor);
         addRow(table, "Humidity", p.getHumidity() + " %", headerColor);
         addRow(table, "Wind Speed", p.getWindSpeed() + " km/h", headerColor);
-        addRow(table, "FWI", String.format("%.2f", p.getFwi()), headerColor);
+        addRow(table, "FWI", p.getFwi() != null ? String.format("%.2f", p.getFwi()) : "N/A", headerColor);
 
         document.add(table);
         document.close();

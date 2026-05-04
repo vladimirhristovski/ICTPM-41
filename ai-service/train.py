@@ -18,12 +18,12 @@ rain_data = pd.DataFrame({
     "humidity":           np.random.uniform(20, 100, n),
     "pressure":           np.random.uniform(980, 1030, n),
     "wind_speed":         np.random.uniform(0, 80, n),
-    "precipitation_prob": np.random.uniform(0, 100, n),
+    "precipitation_prob": np.random.uniform(0, 10, n),
 })
 
 rain_data["will_rain"] = (
     (rain_data["humidity"] > 70) &
-    (rain_data["precipitation_prob"] > 40)
+    (rain_data["precipitation_prob"] > 0.5)
 ).astype(int)
 
 rain_data["expected_mm"] = np.where(

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { getFields, createField, updateField, deleteField, importCSV, exportCSV } from '../services/fieldService';
+import {useEffect, useState} from 'react';
+import {createField, deleteField, exportCSV, getFields, importCSV, updateField} from '../services/fieldService';
 import Navbar from '../components/Navbar';
 
 function riskColor(level) {
@@ -85,7 +85,7 @@ export default function FieldsPage() {
 
     const handleImport = async (e) => {
         const file = e.target.files[0];
-        if (file && file.type === 'text/csv') {
+        if (file && (file.type === 'text/csv' || file.type === 'application/vnd.ms-excel' || file.name.endsWith('.csv'))) {
             await importCSV(file);
             loadFields();
         } else {
@@ -104,45 +104,134 @@ export default function FieldsPage() {
         : 0;
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
-            <Navbar />
+        <div style={{
+            minHeight: '100vh',
+            background: '#f8fafc',
+            color: '#1e293b',
+            fontFamily: "'Inter', 'Segoe UI', sans-serif"
+        }}>
+            <Navbar/>
 
-            <div style={{ padding: '2.5rem 4rem' }}>
-                <div style={{ marginBottom: '2rem' }}>
-                    <h1 style={{ margin: 0, fontSize: '1.875rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.025em' }}>
+            <div style={{padding: '2.5rem 4rem'}}>
+                <div style={{marginBottom: '2rem'}}>
+                    <h1 style={{
+                        margin: 0,
+                        fontSize: '1.875rem',
+                        fontWeight: 800,
+                        color: '#0f172a',
+                        letterSpacing: '-0.025em'
+                    }}>
                         Fields Overview
                     </h1>
-                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '1rem', maxWidth: '720px', lineHeight: 1.6 }}>
-                        Manage geospatial field details and review fire-risk indicators populated automatically after each save.
+                    <p style={{
+                        margin: '4px 0 0',
+                        color: '#64748b',
+                        fontSize: '1rem',
+                        maxWidth: '720px',
+                        lineHeight: 1.6
+                    }}>
+                        Manage geospatial field details and review fire-risk indicators populated automatically after
+                        each save.
                     </p>
                 </div>
 
-                <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{marginBottom: '1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
                     <button
                         onClick={() => {
                             setEditingField(null);
                             setFormData(emptyFormData);
                             setShowModal(true);
                         }}
-                        style={{ background: '#0f172a', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        style={{
+                            background: '#0f172a',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 24px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
                     >
                         <i className="fas fa-plus"></i> Add Field
                     </button>
 
-                    <label style={{ background: '#2563eb', color: 'white', padding: '10px 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label style={{
+                        background: '#2563eb',
+                        color: 'white',
+                        padding: '10px 24px',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
                         <i className="fas fa-upload"></i> Import CSV
-                        <input type="file" accept=".csv" onChange={handleImport} style={{ display: 'none' }} />
+                        <input type="file" accept=".csv" onChange={handleImport} style={{display: 'none'}}/>
                     </label>
 
-                    <button onClick={exportCSV} style={{ background: '#059669', color: 'white', border: 'none', padding: '10px 24px', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                        onClick={() => {
+                            const header = 'name,latitude,longitude,vegetation_type,size_hectares,elevation\n';
+                            const blob = new Blob([header], {type: 'text/csv'});
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'fields_template.csv';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                        }}
+                        style={{
+                            background: '#7c3aed',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 24px',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px'
+                        }}
+                    >
+                        <i className="fas fa-file-csv"></i> CSV Template
+                    </button>
+
+                    <button onClick={exportCSV} style={{
+                        background: '#059669',
+                        color: 'white',
+                        border: 'none',
+                        padding: '10px 24px',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                    }}>
                         <i className="fas fa-download"></i> Export CSV
                     </button>
                 </div>
 
                 {/* VEGETATION TYPE FILTER */}
-                <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginRight: '4px' }}>
-                        <i className="fas fa-leaf" style={{ marginRight: '5px' }}></i>Vegetation:
+                <div style={{
+                    marginBottom: '2rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    flexWrap: 'wrap'
+                }}>
+                    <span style={{fontSize: '0.85rem', fontWeight: 600, color: '#64748b', marginRight: '4px'}}>
+                        <i className="fas fa-leaf" style={{marginRight: '5px'}}></i>Vegetation:
                     </span>
                     {VEGETATION_TYPES.map(type => (
                         <button
@@ -165,7 +254,7 @@ export default function FieldsPage() {
                         </button>
                     ))}
                     {vegetationFilter !== 'All' && (
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginLeft: '4px' }}>
+                        <span style={{fontSize: '0.8rem', color: '#94a3b8', marginLeft: '4px'}}>
                             {filteredFields.length} of {fields.length} fields
                         </span>
                     )}
@@ -178,10 +267,30 @@ export default function FieldsPage() {
                     marginBottom: '2rem'
                 }}>
                     {[
-                        { label: 'Parcels monitored', value: String(fields.length), hint: 'Active in this season', icon: 'fas fa-map-marker-alt' },
-                        { label: 'Total area', value: `${totalArea} ha`, hint: 'Combined footprint', icon: 'fas fa-expand-alt' },
-                        { label: 'Elevated fire risk', value: String(highRiskCount), hint: 'HIGH or EXTREME', icon: 'fas fa-fire' },
-                        { label: 'Avg elevation', value: `${avgElevation} m`, hint: 'Across all fields', icon: 'fas fa-mountain' },
+                        {
+                            label: 'Parcels monitored',
+                            value: String(fields.length),
+                            hint: 'Active in this season',
+                            icon: 'fas fa-map-marker-alt'
+                        },
+                        {
+                            label: 'Total area',
+                            value: `${totalArea} ha`,
+                            hint: 'Combined footprint',
+                            icon: 'fas fa-expand-alt'
+                        },
+                        {
+                            label: 'Elevated fire risk',
+                            value: String(highRiskCount),
+                            hint: 'HIGH or EXTREME',
+                            icon: 'fas fa-fire'
+                        },
+                        {
+                            label: 'Avg elevation',
+                            value: `${avgElevation} m`,
+                            hint: 'Across all fields',
+                            icon: 'fas fa-mountain'
+                        },
                     ].map(stat => (
                         <div
                             key={stat.label}
@@ -193,14 +302,25 @@ export default function FieldsPage() {
                                 boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
                             }}
                         >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                                <i className={stat.icon} style={{ color: '#60a5fa', fontSize: '1.1rem' }}></i>
-                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px'}}>
+                                <i className={stat.icon} style={{color: '#60a5fa', fontSize: '1.1rem'}}></i>
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    color: '#64748b',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.06em'
+                                }}>
                                     {stat.label}
                                 </div>
                             </div>
-                            <div style={{ marginTop: '0.5rem', fontSize: '1.65rem', fontWeight: 800, color: '#0f172a' }}>{stat.value}</div>
-                            <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: '#94a3b8' }}>{stat.hint}</div>
+                            <div style={{
+                                marginTop: '0.5rem',
+                                fontSize: '1.65rem',
+                                fontWeight: 800,
+                                color: '#0f172a'
+                            }}>{stat.value}</div>
+                            <div style={{marginTop: '0.35rem', fontSize: '0.8rem', color: '#94a3b8'}}>{stat.hint}</div>
                         </div>
                     ))}
                 </div>
@@ -214,9 +334,11 @@ export default function FieldsPage() {
                         border: '1px solid #e2e8f0',
                         color: '#94a3b8'
                     }}>
-                        <i className="fas fa-leaf" style={{ fontSize: '2rem', marginBottom: '1rem', display: 'block' }}></i>
-                        <p style={{ margin: 0, fontWeight: 600 }}>No fields match the selected vegetation type.</p>
-                        <p style={{ margin: '6px 0 0', fontSize: '0.9rem' }}>Try selecting a different filter or add a new field.</p>
+                        <i className="fas fa-leaf"
+                           style={{fontSize: '2rem', marginBottom: '1rem', display: 'block'}}></i>
+                        <p style={{margin: 0, fontWeight: 600}}>No fields match the selected vegetation type.</p>
+                        <p style={{margin: '6px 0 0', fontSize: '0.9rem'}}>Try selecting a different filter or add a new
+                            field.</p>
                     </div>
                 ) : (
                     <div style={{
@@ -235,13 +357,19 @@ export default function FieldsPage() {
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                                 }}
                             >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'start',
+                                    marginBottom: '1rem'
+                                }}>
                                     <div>
-                                        <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                                        <h2 style={{margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a'}}>
                                             {field.name}
                                         </h2>
-                                        <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
-                                            <i className="fas fa-location-dot" style={{ fontSize: '0.7rem', marginRight: '4px' }}></i>
+                                        <p style={{margin: '6px 0 0', color: '#64748b', fontSize: '0.9rem'}}>
+                                            <i className="fas fa-location-dot"
+                                               style={{fontSize: '0.7rem', marginRight: '4px'}}></i>
                                             {field.latitude}, {field.longitude}
                                         </p>
                                     </div>
@@ -253,19 +381,29 @@ export default function FieldsPage() {
                                         background: '#eff6ff',
                                         color: '#2563eb'
                                     }}>
-                                        <i className="fas fa-chart-line" style={{ fontSize: '0.65rem', marginRight: '4px' }}></i>
+                                        <i className="fas fa-chart-line"
+                                           style={{fontSize: '0.65rem', marginRight: '4px'}}></i>
                                         Monitored
                                     </span>
                                 </div>
 
-                                <div style={{ display: 'grid', gap: '0.9rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-location-crosshairs" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Coordinates</span>
-                                        <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.latitude}, {field.longitude}</span>
+                                <div style={{display: 'grid', gap: '0.9rem'}}>
+                                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                        <span style={{color: '#64748b', fontWeight: 600}}><i
+                                            className="fas fa-location-crosshairs"
+                                            style={{fontSize: '0.75rem', marginRight: '6px'}}></i>Coordinates</span>
+                                        <span style={{
+                                            color: '#1e293b',
+                                            fontWeight: 700
+                                        }}>{field.latitude}, {field.longitude}</span>
                                     </div>
 
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-leaf" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Vegetation</span>
+                                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                        <span style={{color: '#64748b', fontWeight: 600}}><i className="fas fa-leaf"
+                                                                                             style={{
+                                                                                                 fontSize: '0.75rem',
+                                                                                                 marginRight: '6px'
+                                                                                             }}></i>Vegetation</span>
                                         <span style={{
                                             padding: '3px 10px',
                                             borderRadius: '999px',
@@ -278,8 +416,16 @@ export default function FieldsPage() {
                                         </span>
                                     </div>
 
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-fire" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Fire Risk</span>
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}>
+                                        <span style={{color: '#64748b', fontWeight: 600}}><i className="fas fa-fire"
+                                                                                             style={{
+                                                                                                 fontSize: '0.75rem',
+                                                                                                 marginRight: '6px'
+                                                                                             }}></i>Fire Risk</span>
                                         <span style={{
                                             padding: '5px 10px',
                                             borderRadius: '999px',
@@ -292,17 +438,37 @@ export default function FieldsPage() {
                                         </span>
                                     </div>
 
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-arrows-alt" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Size</span>
-                                        <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.sizeHectares ?? '—'} ha</span>
+                                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                        <span style={{color: '#64748b', fontWeight: 600}}><i
+                                            className="fas fa-arrows-alt"
+                                            style={{fontSize: '0.75rem', marginRight: '6px'}}></i>Size</span>
+                                        <span style={{
+                                            color: '#1e293b',
+                                            fontWeight: 700
+                                        }}>{field.sizeHectares ?? '—'} ha</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-mountain" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Elevation</span>
-                                        <span style={{ color: '#1e293b', fontWeight: 700 }}>{field.elevation ?? '—'} m</span>
+                                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                        <span style={{color: '#64748b', fontWeight: 600}}><i className="fas fa-mountain"
+                                                                                             style={{
+                                                                                                 fontSize: '0.75rem',
+                                                                                                 marginRight: '6px'
+                                                                                             }}></i>Elevation</span>
+                                        <span style={{
+                                            color: '#1e293b',
+                                            fontWeight: 700
+                                        }}>{field.elevation ?? '—'} m</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: '#64748b', fontWeight: 600 }}><i className="fas fa-clock" style={{ fontSize: '0.75rem', marginRight: '6px' }}></i>Created</span>
-                                        <span style={{ color: '#64748b', fontWeight: 600, fontSize: '0.85rem' }}>{formatCreatedAt(field.createdAt)}</span>
+                                    <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                                        <span style={{color: '#64748b', fontWeight: 600}}><i className="fas fa-clock"
+                                                                                             style={{
+                                                                                                 fontSize: '0.75rem',
+                                                                                                 marginRight: '6px'
+                                                                                             }}></i>Created</span>
+                                        <span style={{
+                                            color: '#64748b',
+                                            fontWeight: 600,
+                                            fontSize: '0.85rem'
+                                        }}>{formatCreatedAt(field.createdAt)}</span>
                                     </div>
                                 </div>
 
@@ -314,15 +480,38 @@ export default function FieldsPage() {
                                     fontSize: '0.88rem',
                                     lineHeight: 1.55
                                 }}>
-                                    <i className="fas fa-pen" style={{ fontSize: '0.7rem', marginRight: '6px', color: '#94a3b8' }}></i>
+                                    <i className="fas fa-pen"
+                                       style={{fontSize: '0.7rem', marginRight: '6px', color: '#94a3b8'}}></i>
                                     Field metrics are refreshed automatically by backend weather and AI jobs after save.
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                                    <button onClick={() => handleEdit(field)} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{display: 'flex', gap: '0.5rem', marginTop: '1rem'}}>
+                                    <button onClick={() => handleEdit(field)} style={{
+                                        background: '#3b82f6',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '6px 12px',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.75rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}>
                                         <i className="fas fa-edit"></i> Edit
                                     </button>
-                                    <button onClick={() => handleDelete(field.id, field.name)} style={{ background: '#ef4444', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <button onClick={() => handleDelete(field.id, field.name)} style={{
+                                        background: '#ef4444',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '6px 12px',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        fontSize: '0.75rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}>
                                         <i className="fas fa-trash"></i> Delete
                                     </button>
                                 </div>
@@ -345,13 +534,33 @@ export default function FieldsPage() {
                         border: '1px solid #e2e8f0',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
                     }}>
-                        <h2 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            <i className="fas fa-chart-simple" style={{ marginRight: '6px' }}></i> How ICTPM-41 uses this data
+                        <h2 style={{
+                            margin: '0 0 0.75rem',
+                            fontSize: '0.9rem',
+                            color: '#64748b',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                        }}>
+                            <i className="fas fa-chart-simple" style={{marginRight: '6px'}}></i> How ICTPM-41 uses this
+                            data
                         </h2>
-                        <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#475569', fontSize: '0.95rem', lineHeight: 1.7 }}>
-                            <li>Rain probability and weekly totals are blended with soil moisture trends to flag irrigation stress or waterlogging risk.</li>
-                            <li>Fire risk combines temperature, humidity, wind, and vegetation dryness signals—stronger wind on dry parcels raises the index faster.</li>
-                            <li>Readings are refreshed on a short interval; use "last sensor sync" to know how fresh each card is before acting.</li>
+                        <ul style={{
+                            margin: 0,
+                            paddingLeft: '1.25rem',
+                            color: '#475569',
+                            fontSize: '0.95rem',
+                            lineHeight: 1.7
+                        }}>
+                            <li>Rain probability and weekly totals are blended with soil moisture trends to flag
+                                irrigation stress or waterlogging risk.
+                            </li>
+                            <li>Fire risk combines temperature, humidity, wind, and vegetation dryness signals—stronger
+                                wind on dry parcels raises the index faster.
+                            </li>
+                            <li>Readings are refreshed on a short interval; use "last sensor sync" to know how fresh
+                                each card is before acting.
+                            </li>
                         </ul>
                     </div>
                     <div style={{
@@ -361,13 +570,32 @@ export default function FieldsPage() {
                         color: '#e2e8f0',
                         boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.35)'
                     }}>
-                        <h2 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            <i className="fas fa-clipboard-list" style={{ marginRight: '6px' }}></i> Practical checklist
+                        <h2 style={{
+                            margin: '0 0 0.75rem',
+                            fontSize: '0.9rem',
+                            color: '#94a3b8',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                        }}>
+                            <i className="fas fa-clipboard-list" style={{marginRight: '6px'}}></i> Practical checklist
                         </h2>
-                        <ol style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.92rem', lineHeight: 1.75, color: '#cbd5e1' }}>
-                            <li>Start with parcels marked EXTREME or HIGH for fire—confirm equipment schedules and public reporting lines.</li>
-                            <li>Cross-check rain outlook before spraying or harvesting; gusty dry days need different timing than calm wet ones.</li>
-                            <li>Log any on-ground observations in your ops workflow so future seasons improve the baseline for these dashboards.</li>
+                        <ol style={{
+                            margin: 0,
+                            paddingLeft: '1.25rem',
+                            fontSize: '0.92rem',
+                            lineHeight: 1.75,
+                            color: '#cbd5e1'
+                        }}>
+                            <li>Start with parcels marked EXTREME or HIGH for fire—confirm equipment schedules and
+                                public reporting lines.
+                            </li>
+                            <li>Cross-check rain outlook before spraying or harvesting; gusty dry days need different
+                                timing than calm wet ones.
+                            </li>
+                            <li>Log any on-ground observations in your ops workflow so future seasons improve the
+                                baseline for these dashboards.
+                            </li>
                         </ol>
                     </div>
                 </div>
@@ -393,42 +621,63 @@ export default function FieldsPage() {
                         maxHeight: '80%',
                         overflow: 'auto'
                     }}>
-                        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <h2 style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px'}}>
                             <i className={`fas ${editingField ? 'fa-edit' : 'fa-plus'}`}></i>
                             {editingField ? 'Edit Field' : 'Add New Field'}
                         </h2>
                         <form onSubmit={handleSubmit}>
-                            <div style={{ display: 'grid', gap: '1rem' }}>
+                            <div style={{display: 'grid', gap: '1rem'}}>
                                 <input
                                     type="text"
                                     placeholder="Field Name *"
                                     value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                    onChange={e => setFormData({...formData, name: e.target.value})}
                                     required
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem' }}
+                                    style={{
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ccc',
+                                        fontSize: '0.9rem'
+                                    }}
                                 />
                                 <input
                                     type="number"
                                     step="any"
                                     placeholder="Latitude *"
                                     value={formData.latitude}
-                                    onChange={e => setFormData({ ...formData, latitude: e.target.value })}
+                                    onChange={e => setFormData({...formData, latitude: e.target.value})}
                                     required
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem' }}
+                                    style={{
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ccc',
+                                        fontSize: '0.9rem'
+                                    }}
                                 />
                                 <input
                                     type="number"
                                     step="any"
                                     placeholder="Longitude *"
                                     value={formData.longitude}
-                                    onChange={e => setFormData({ ...formData, longitude: e.target.value })}
+                                    onChange={e => setFormData({...formData, longitude: e.target.value})}
                                     required
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem' }}
+                                    style={{
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ccc',
+                                        fontSize: '0.9rem'
+                                    }}
                                 />
                                 <select
                                     value={formData.vegetationType || 'Crops'}
-                                    onChange={e => setFormData({ ...formData, vegetationType: e.target.value })}
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem', color: '#1e293b' }}
+                                    onChange={e => setFormData({...formData, vegetationType: e.target.value})}
+                                    style={{
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ccc',
+                                        fontSize: '0.9rem',
+                                        color: '#1e293b'
+                                    }}
                                 >
                                     <option value="Crops">Crops</option>
                                     <option value="Mixed">Mixed</option>
@@ -439,24 +688,56 @@ export default function FieldsPage() {
                                     step="any"
                                     placeholder="Size in hectares *"
                                     value={formData.sizeHectares}
-                                    onChange={e => setFormData({ ...formData, sizeHectares: e.target.value })}
+                                    onChange={e => setFormData({...formData, sizeHectares: e.target.value})}
                                     required
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem' }}
+                                    style={{
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ccc',
+                                        fontSize: '0.9rem'
+                                    }}
                                 />
                                 <input
                                     type="number"
                                     step="any"
                                     placeholder="Elevation (optional)"
                                     value={formData.elevation}
-                                    onChange={e => setFormData({ ...formData, elevation: e.target.value })}
-                                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '0.9rem' }}
+                                    onChange={e => setFormData({...formData, elevation: e.target.value})}
+                                    style={{
+                                        padding: '10px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ccc',
+                                        fontSize: '0.9rem'
+                                    }}
                                 />
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                                <button type="submit" style={{ background: '#0f172a', color: 'white', padding: '10px 24px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{display: 'flex', gap: '1rem', marginTop: '1.5rem'}}>
+                                <button type="submit" style={{
+                                    background: '#0f172a',
+                                    color: 'white',
+                                    padding: '10px 24px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}>
                                     <i className="fas fa-save"></i> Save
                                 </button>
-                                <button type="button" onClick={() => setShowModal(false)} style={{ background: '#94a3b8', color: 'white', padding: '10px 24px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <button type="button" onClick={() => setShowModal(false)} style={{
+                                    background: '#94a3b8',
+                                    color: 'white',
+                                    padding: '10px 24px',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}>
                                     <i className="fas fa-times"></i> Cancel
                                 </button>
                             </div>
