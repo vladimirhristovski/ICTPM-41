@@ -136,7 +136,7 @@ export default function AlertsPage() {
         try {
             await api.put(`/alerts/${id}/read`);
             setAlerts(prev =>
-                prev.map(a => a.id === id ? {...a, isRead: true} : a)
+                prev.map(a => a.id === id ? {...a, read: true} : a)
             );
         } catch {
             alert('Could not mark alert as read. Please try again.');

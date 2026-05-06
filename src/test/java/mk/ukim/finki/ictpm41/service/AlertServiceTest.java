@@ -141,7 +141,7 @@ public class AlertServiceTest {
         List<AlertResponse> result = alertService.getUnreadAlertsForUser(1L);
 
         assertEquals(1, result.size());
-        assertFalse(result.get(0).getIsRead());
+        assertFalse(result.get(0).getRead());
     }
 
     // ── countUnreadAlerts ───────────────────────────────────────
