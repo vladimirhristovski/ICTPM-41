@@ -67,8 +67,7 @@ public class WeatherService {
                         "wind_speed_10m",
                         "wind_direction_10m",
                         "pressure_msl",
-                        "soil_moisture_0_to_1cm",
-                        "fire_weather_index"))
+                        "soil_moisture_0_to_1cm"))
                 .queryParam("forecast_days", 1)
                 .queryParam("timezone", "Europe/Skopje")
                 .toUriString();
