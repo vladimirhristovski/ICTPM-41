@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.LocalTime;
 import java.util.List;
 
 @Slf4j
@@ -42,16 +43,17 @@ public class WeatherService {
         }
 
         OpenMeteoResponse.Hourly hourly = response.getHourly();
+        int currentHour = LocalTime.now().getHour();
 
         WeatherReading reading = new WeatherReading();
-        reading.setTemperature(getSafeDouble(hourly.getTemperature_2m(), 0));
-        reading.setHumidity(getSafeInteger(hourly.getRelative_humidity_2m(), 0));
-        reading.setWindSpeed(getSafeDouble(hourly.getWind_speed_10m(), 0));
-        reading.setWindDirection(getSafeInteger(hourly.getWind_direction_10m(), 0));
-        reading.setPressure(getSafeDouble(hourly.getPressure_msl(), 0));
-        reading.setPrecipitation(getSafeDouble(hourly.getPrecipitation(), 0));
-        reading.setSoilMoisture(getSafeDouble(hourly.getSoil_moisture_0_to_1cm(), 0));
-        reading.setFireWeatherIndex(getSafeDouble(hourly.getFire_weather_index(), 0));
+        reading.setTemperature(getSafeDouble(hourly.getTemperature_2m(), currentHour));
+        reading.setHumidity(getSafeInteger(hourly.getRelative_humidity_2m(), currentHour));
+        reading.setWindSpeed(getSafeDouble(hourly.getWind_speed_10m(), currentHour));
+        reading.setWindDirection(getSafeInteger(hourly.getWind_direction_10m(), currentHour));
+        reading.setPressure(getSafeDouble(hourly.getPressure_msl(), currentHour));
+        reading.setPrecipitation(getSafeDouble(hourly.getPrecipitation(), currentHour));
+        reading.setSoilMoisture(getSafeDouble(hourly.getSoil_moisture_0_to_1cm(), currentHour));
+        reading.setFireWeatherIndex(getSafeDouble(hourly.getFire_weather_index(), currentHour));
 
         return reading;
     }
