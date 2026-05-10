@@ -23,6 +23,7 @@ public class OpenMeteoResponse {
         private List<Double> pressure_msl;
         private List<Double> soil_moisture_0_to_1cm;
         private List<Double> fire_weather_index;
+        private List<Integer> precipitation_probability;
 
     }
 }

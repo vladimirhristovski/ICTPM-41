@@ -54,7 +54,7 @@ public class AiPredictionService {
             List<Integer> humids = forecast.getHourly().getRelative_humidity_2m();
             List<Double> pressures = forecast.getHourly().getPressure_msl();
             List<Double> winds = forecast.getHourly().getWind_speed_10m();
-            List<Double> precips = forecast.getHourly().getPrecipitation();
+            List<Integer> precipProbs = forecast.getHourly().getPrecipitation_probability();
 
             double[] temperatures = new double[7];
             double[] humidity = new double[7];
@@ -68,7 +68,7 @@ public class AiPredictionService {
                 humidity[i] = getSafeInt(humids, idx, 50);
                 pressure[i] = getSafeDouble(pressures, idx, 1013.0);
                 windSpeed[i] = getSafeDouble(winds, idx, 5.0);
-                precipProb[i] = getSafeDouble(precips, idx, 0.0);
+                precipProb[i] = getSafeInt(precipProbs, idx, 0);
             }
 
             Map<String, Object> body = Map.of(
@@ -156,7 +156,7 @@ public class AiPredictionService {
                 .queryParam("hourly", String.join(",",
                         "temperature_2m",
                         "relative_humidity_2m",
-                        "precipitation",
+                        "precipitation_probability",
                         "wind_speed_10m",
                         "wind_direction_10m",
                         "pressure_msl",
